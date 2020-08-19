@@ -6,4 +6,6 @@ import db
 
 
 db.create_database()
-api.get_rubrics()
+# api.save_rubrics_to_db()
+ids = db.get_rubric_ids()
+api.save_rubrics_objects_to_db(ids)

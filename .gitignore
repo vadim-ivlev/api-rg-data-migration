@@ -17,4 +17,4 @@ objects.json
 
 __pycache__
 .ropeproject
-
+*.db
