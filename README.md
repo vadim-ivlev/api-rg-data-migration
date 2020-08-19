@@ -32,3 +32,11 @@ Kamil Ocean, [17.08.20 16:27]
 
 Максим Чагин, [17.08.20 17:29]
 - Можно еще так https://rg.ru/include/tmpl-b-feed/is-announce/num-1000/index.json
+
+
+## доступ из дома к АПИ
+
+проксирование через сервер у которого есть доступ к этому API
+https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-798781.xml
+
+запрос к rg.ru просто помещаешь в query
