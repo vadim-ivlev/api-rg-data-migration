@@ -3,12 +3,21 @@ import db
 import api
 import sqlite3
 import json
+import timeit
 
 
 def main():
     "сохраняет рубрикатор в базе данных"
+
+    print("Creating rubrics table in database...")
     create_rubrics_table()
-    save_rubrics_to_db()
+
+    print("downloading rubrics...")
+    rubrics_json = api.get_text_from_url(api.url_json)
+    # timeit.Timer(function).timeit(number=NUMBER)
+
+    print("Saving rubrics to databse...")
+    save_rubrics_to_db(rubrics_json)
 
 
 
@@ -38,13 +47,12 @@ def create_rubrics_table():
 
 new_rubrics_counter =0
 
-def save_rubrics_to_db():
+def save_rubrics_to_db(text):
     "Сохраняет рубрики в базе данных"
     
     global new_rubrics_counter
     new_rubrics_counter = 0
-
-    text = api.get_text_from_url(api.url_json)
+    
     nodes = json.loads(text)
     
     id = 0
