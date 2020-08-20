@@ -9,7 +9,6 @@ import time
 import db
 
 #  url рубрикатора 
-url_xml = 'https://rg.ru/api/get/rubricator.xml'
 url_json = 'https://rg.ru/api/get/rubricator.json'
 
 # url json объектов связанных с рубрикой
