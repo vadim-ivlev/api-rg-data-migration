@@ -45,13 +45,17 @@ def create_rubrics_table():
 
 # R U B R I C S ----------------------------------------------------------------------
 
+rubric_objects = []
 new_rubrics_counter =0
 
 def save_rubrics_to_db(text):
     "Сохраняет рубрики в базе данных"
     
     global new_rubrics_counter
+    global rubric_objects
+
     new_rubrics_counter = 0
+    rubric_objects = []
     
     nodes = json.loads(text)
     
@@ -75,7 +79,8 @@ def add_nodes(parent_id, nodes):
 def add_node(parent_id, node):   
     "Добавляет узел рубрикатора в базу данных" 
     id = node.get('id')
-    save_rubric(id, parent_id, node.get('title'), node.get('uri'))
+    # save_rubric(id, parent_id, node.get('title'), node.get('uri'))
+    rubric_objects.append(id, parent_id, node.get('title'), node.get('uri'))
     add_nodes(id, node.get('childs',[]))
 
 

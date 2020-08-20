@@ -17,3 +17,16 @@ def execute(conn, query, *argv):
 
 
 
+def executemany(conn, query, arr=[]):
+    "Безопасно исполняет запрос на множестве записей. arr = [(,,),(,,),...]"
+    try:
+        with conn:
+            conn.executemany(query, arr )
+        return True
+    # except sqlite3.IntegrityError:
+    except sqlite3.Error:
+        return False
+
+
+
+
