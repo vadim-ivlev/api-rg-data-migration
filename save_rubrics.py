@@ -69,6 +69,7 @@ def save_rubrics_to_db(text):
         id += 1
     # print(rubric_objects, len(rubric_objects))
     save_rubrics(rubric_objects)
+    print(f'New {new_rubrics_counter}/{len(rubric_objects)} rubrics added')
 
 
 def add_nodes(parent_id, nodes):
@@ -89,24 +90,20 @@ def add_node(parent_id, node):
 
 def save_rubrics(rubrics):
     "Сохраняет рубрики в базу данных"
+
     conn = sqlite3.connect(db.db_filename)
-    if db.executemany(conn, "INSERT INTO rubrics VALUES (?,?,?,?)", rubrics):
-        print(f'\nnew rubrics = {len(rubrics)}')
-    else:
-        print(f'Cannot save {len(rubrics)} rubrics')
-    conn.close()
-
-
-def save_rubric(id = 0, parent_id = None, title="", uri=""):
-    "Сохраняет рубрику в базу данных"
+    sql = "INSERT INTO rubrics VALUES (?,?,?,?)"
     global new_rubrics_counter
-    conn = sqlite3.connect(db.db_filename)
-    if db.execute(conn, "INSERT INTO rubrics VALUES (?,?,?,?)", (id,parent_id,title,uri)):
-        new_rubrics_counter += 1
-        print(f'\nnew rubrics = {new_rubrics_counter}')
+
+    if db.executemany(conn, sql, rubrics):
+        new_rubrics_counter += len(rubrics)
     else:
-        print(f'rubric {id} exists', end=" ***\r")
+        for rubric in rubrics:
+            if db.execute(conn, sql, rubric) :
+                new_rubrics_counter += 1
+
     conn.close()
+
 
 
 if __name__ == "__main__":
