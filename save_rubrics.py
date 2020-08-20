@@ -67,7 +67,8 @@ def save_rubrics_to_db(text):
         add_node(None, {'id': sid, 'title': k, 'uri': f'/{k}/'})
         add_nodes(id, nodes[k])
         id += 1
-
+    # print(rubric_objects, len(rubric_objects))
+    save_rubrics(rubric_objects)
 
 
 def add_nodes(parent_id, nodes):
@@ -80,9 +81,20 @@ def add_node(parent_id, node):
     "Добавляет узел рубрикатора в базу данных" 
     id = node.get('id')
     # save_rubric(id, parent_id, node.get('title'), node.get('uri'))
-    rubric_objects.append(id, parent_id, node.get('title'), node.get('uri'))
+    o = (id, parent_id, node.get('title'), node.get('uri'))
+    rubric_objects.append(o)
     add_nodes(id, node.get('childs',[]))
 
+
+
+def save_rubrics(rubrics):
+    "Сохраняет рубрики в базу данных"
+    conn = sqlite3.connect(db.db_filename)
+    if db.executemany(conn, "INSERT INTO rubrics VALUES (?,?,?,?)", rubrics):
+        print(f'\nnew rubrics = {len(rubrics)}')
+    else:
+        print(f'Cannot save {len(rubrics)} rubrics')
+    conn.close()
 
 
 def save_rubric(id = 0, parent_id = None, title="", uri=""):
