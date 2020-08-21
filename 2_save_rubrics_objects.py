@@ -4,7 +4,7 @@ import api
 import sqlite3
 import json
 import os
-
+import time
 
 
 def main():
@@ -35,10 +35,8 @@ def create_rubrics_objects_table():
     """
 
     conn = sqlite3.connect(db.db_filename)
-    if db.execute(conn, sql_create_rubrics_objects ):
-        print('rubrics_objects table is created')
-    else:
-        print('rubrics_objects table already exists')
+    n = db.execute(conn, sql_create_rubrics_objects )
+    print(f'{n} rubrics_objects table is created')
     conn.close()
 
 
@@ -55,20 +53,28 @@ def get_rubric_ids():
 
 def save_rubrics_objects_to_db(ids):
     "Сохраняет таблицу связи рубрикатора с объектами в базу данных"
-
+    
     rubric_counter=0
     object_counter=0
-    for id in ids:
-        objects = get_rubric_objects(id)
-        for o in objects:
-            save_rubric_object(id, o.get('id'), o.get('datetime'), o.get('kind'))
 
+    for id in ids:
+        t0 = time.time()
+        objects = get_rubric_objects(id)
+        t1 = time.time()
+        # Массив для хранения связей рубрика-объект
+        links =[]
+        for o in objects:
+            # save_rubric_object(id, o.get('id'), o.get('datetime'), o.get('kind'))
+            link = (id, o.get('id'), o.get('datetime'), o.get('kind'))
+            links.append(link)
+
+        n = save_rubric_object_links(links)
+        t2 = time.time()
+        print(f'request/saving time = {t1-t0:.2f}/{t2-t1:.2f}')
         file_size = os.path.getsize("rg.db")    
         rubric_counter += 1
         object_counter += len(objects)
-        print(f'#rubric N={rubric_counter} rubric id={id}  number of objects ={len(objects)} total objects={object_counter}  file_size={file_size/(1024*1024)}')
-
-
+        print(f'#rubric N={rubric_counter} rubric id={id}  New objects ={n}/{len(objects)} total objects={object_counter}  file_size={file_size/(1024*1024)}')
 
 
 def get_rubric_objects(rubric_id):
@@ -76,27 +82,20 @@ def get_rubric_objects(rubric_id):
     Получить объекты связанные с рубрикой
     """
     text = api.get_text_from_url(api.url_rubric_objects + rubric_id + '.json')
-
     try:
         objects = json.loads(text)
     except:
         objects = []
-
     return objects
 
 
-new_rubrics_objects_counter =0
-def save_rubric_object(rubric_id, object_id, datetime, kind):
-    "Сохраняет связку (id рубрики - id объекта) в базу данных"
-    global new_rubrics_objects_counter
+def save_rubric_object_links(links=[]):
+    "Сохраняет массив связок (id рубрики - id объекта) в базу данных"
     conn = sqlite3.connect(db.db_filename)
-    if db.execute(conn, "INSERT INTO rubrics_objects VALUES (?,?,?,?)", (rubric_id, object_id, datetime, kind)):
-        new_rubrics_objects_counter += 1
-        print(f'\nnew rubrics_objects = {new_rubrics_objects_counter}')
-    else:
-        print(f'rubric_object {rubric_id}-{object_id} exists', end=" ***\r")
+    n = db.executemany_or_by_one(conn, "INSERT INTO rubrics_objects VALUES (?,?,?,?)", links)
     conn.close()
-
+    print(f'{n} out of {len(links)} rubric-object links saved to database.')
+    return n
 
 if __name__ == "__main__":
     main()

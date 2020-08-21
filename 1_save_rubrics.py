@@ -34,29 +34,20 @@ def create_rubrics_table():
     );
     """
     conn = sqlite3.connect(db.db_filename)
-    if db.execute(conn, sql_create_rubrics ):
-        print('rubrics table is created')
-    else:
-        print('rubrics table already exists')
+    n =  db.execute(conn, sql_create_rubrics )
+    print(f'{n} rubrics table is created')
 
     conn.close()
 
 
-
-# R U B R I C S ----------------------------------------------------------------------
-
+# Массив для хранения объектов рубрик перед сохранением в базу данных
 rubric_objects = []
-new_rubrics_counter =0
 
 def save_rubrics_to_db(text):
     "Сохраняет рубрики в базе данных"
     
-    global new_rubrics_counter
     global rubric_objects
-
-    new_rubrics_counter = 0
     rubric_objects = []
-    
     nodes = json.loads(text)
     
     id = 0
@@ -67,9 +58,8 @@ def save_rubrics_to_db(text):
         add_node(None, {'id': sid, 'title': k, 'uri': f'/{k}/'})
         add_nodes(id, nodes[k])
         id += 1
-    # print(rubric_objects, len(rubric_objects))
-    save_rubrics(rubric_objects)
-    print(f'New {new_rubrics_counter}/{len(rubric_objects)} rubrics added')
+    n = save_rubrics(rubric_objects)
+    print(f'{n} out of {len(rubric_objects)} rubrics added')
 
 
 def add_nodes(parent_id, nodes):
@@ -81,11 +71,9 @@ def add_nodes(parent_id, nodes):
 def add_node(parent_id, node):   
     "Добавляет узел рубрикатора в базу данных" 
     id = node.get('id')
-    # save_rubric(id, parent_id, node.get('title'), node.get('uri'))
     o = (id, parent_id, node.get('title'), node.get('uri'))
     rubric_objects.append(o)
     add_nodes(id, node.get('childs',[]))
-
 
 
 def save_rubrics(rubrics):
@@ -93,16 +81,9 @@ def save_rubrics(rubrics):
 
     conn = sqlite3.connect(db.db_filename)
     sql = "INSERT INTO rubrics VALUES (?,?,?,?)"
-    global new_rubrics_counter
-
-    if db.executemany(conn, sql, rubrics):
-        new_rubrics_counter += len(rubrics)
-    else:
-        for rubric in rubrics:
-            if db.execute(conn, sql, rubric) :
-                new_rubrics_counter += 1
-
+    n = db.executemany_or_by_one(conn, sql, rubrics)
     conn.close()
+    return n
 
 
 
