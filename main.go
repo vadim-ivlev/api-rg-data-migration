@@ -10,4 +10,5 @@ func main() {
 	if err != nil {
 		fmt.Printf("Unable to write file: %v", err)
 	}
+	fmt.Print("DONE")
 }
