@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+
+  cont:
+    image: "alpine"
+    user: "5000:5000"
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: "./ownership-test"
+
