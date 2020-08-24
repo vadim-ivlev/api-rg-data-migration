@@ -250,18 +250,22 @@ func exec(sqlText string) {
 
 func execMany(sqlText string, paramsArray [][]interface{}) {
 	db, err := sql.Open("sqlite3", dbFileName)
-	defer db.Close()
+	// defer db.Close()
 	checkErr(err)
 
 	for _, params := range paramsArray {
 		stmt, err := db.Prepare(sqlText)
 		checkErr(err)
-		_, err = stmt.Exec(params...)
+		res, err := stmt.Exec(params...)
 		checkErr(err)
-		defer stmt.Close()
+		affect, err := res.RowsAffected()
+		checkErr(err)
+
+		fmt.Println("Affected->", affect)
+		// defer stmt.Close()
 	}
-	// err = db.Close()
-	// checkErr(err)
+	err = db.Close()
+	checkErr(err)
 }
 
 func checkErr(err error) {
