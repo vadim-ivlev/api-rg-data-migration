@@ -33,9 +33,11 @@ def create_rubrics_objects_table():
         PRIMARY KEY(rubric_id, object_id)
     );
     """
+    sql_create_index = "CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects (kind);"
 
     conn = sqlite3.connect(db.db_filename)
     n = db.execute(conn, sql_create_rubrics_objects )
+    n = db.execute(conn, sql_create_index )
     print(f'{n} rubrics_objects table is created')
     conn.close()
 
