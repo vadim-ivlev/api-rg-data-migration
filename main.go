@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -222,7 +223,7 @@ func saveArticles(records []map[string]string) {
 			url=? ,
 			migration_status=? 
 		WHERE 
-			obj_id = ?
+			obj_id=?
 	`
 	execMany(sqlUpdate, paramsArray)
 }
@@ -230,8 +231,9 @@ func saveArticles(records []map[string]string) {
 func getMapVal(m map[string]string, key string) interface{} {
 	v, ok := m[key]
 	if !ok {
-		return nil
+		return "empty"
 	}
+	v = strings.Trim(v, "\"")
 	return v
 }
 
@@ -252,11 +254,13 @@ func execMany(sqlText string, paramsArray [][]interface{}) {
 	db, err := sql.Open("sqlite3", dbFileName)
 	// defer db.Close()
 	checkErr(err)
+	stmt, err := db.Prepare(sqlText)
+	checkErr(err)
 
 	for _, params := range paramsArray {
-		stmt, err := db.Prepare(sqlText)
-		checkErr(err)
 		res, err := stmt.Exec(params...)
+		// res, err := db.Exec(sqlText, params...)
+
 		checkErr(err)
 		affect, err := res.RowsAffected()
 		checkErr(err)
@@ -264,6 +268,8 @@ func execMany(sqlText string, paramsArray [][]interface{}) {
 		fmt.Println("Affected->", affect)
 		// defer stmt.Close()
 	}
+	err = stmt.Close()
+	checkErr(err)
 	err = db.Close()
 	checkErr(err)
 }
