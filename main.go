@@ -13,7 +13,7 @@ import (
 )
 
 var dbFileName = `rg.db`
-var pageSize = 5
+var pageSize = 20
 var pageCount = 0
 var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-%v.json"
 var sleepTime = time.Second
@@ -259,14 +259,12 @@ func execMany(sqlText string, paramsArray [][]interface{}) {
 
 	for _, params := range paramsArray {
 		res, err := stmt.Exec(params...)
-		// res, err := db.Exec(sqlText, params...)
-
 		checkErr(err)
 		affect, err := res.RowsAffected()
 		checkErr(err)
-
-		fmt.Println("Affected->", affect)
-		// defer stmt.Close()
+		if affect == 0 {
+			fmt.Println("Affected->", affect)
+		}
 	}
 	err = stmt.Close()
 	checkErr(err)
