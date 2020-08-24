@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -14,22 +15,24 @@ var dbFileName = `rg.db`
 var pageSize = 5
 var pageCount = 0
 var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-%v.json"
+var sleepTime = time.Second
 
 func main() {
 	// Порождаем таблицу articles
-	// createArticlesTable()
+	createArticlesTable()
 	// Заполняем ее пустыми записями с идентификаторами из таблицы rubrics_articles
-	// fillArticlesWithIds()
+	//fillArticlesWithIds()
 	//Берем первую порцию идентификаторов из таблицы articles
 	ids := getArticleIds(pageSize)
 	// Если в порции есть идентификаторы
 	for len(ids) > 0 {
 		//Запрашиваем тексты статей
-		articles := getArticlesFromAPI(ids)
+		articleTexts := getArticlesFromAPI(ids)
+		articleRecords := textsToRecords(articleTexts)
 		// Сохраняем их в базу данных
-		saveArticles(articles)
+		saveArticles(articleRecords)
 		// Берем следующую порцию идентификаторов
-		time.Sleep(time.Second)
+		time.Sleep(sleepTime)
 		ids = getArticleIds(pageSize)
 	}
 
@@ -39,29 +42,29 @@ func main() {
 
 func createArticlesTable() {
 	sqlCreateArticles := `
-CREATE TABLE IF NOT EXISTS articles(
-    obj_id TEXT PRIMARY KEY,
-    announce TEXT,
-    authors TEXT,
-    date_modified TEXT, 
-    "full-text" TEXT,
-    images TEXT,
-    index_priority TEXT,
-    is_active TEXT,
-    is_announce TEXT,
-    is_paid TEXT,
-    link_title TEXT,
-    links TEXT, 
-    obj_kind TEXT,
-    projects TEXT,
-    release_date TEXT,
-    spiegel TEXT,
-    title TEXT,
-    uannounce TEXT,
-    url TEXT,
-    migration_status TEXT DEFAULT ''
-)
-`
+	CREATE TABLE IF NOT EXISTS articles(
+		obj_id TEXT PRIMARY KEY,
+		announce TEXT,
+		authors TEXT,
+		date_modified TEXT, 
+		"full-text" TEXT,
+		images TEXT,
+		index_priority TEXT,
+		is_active TEXT,
+		is_announce TEXT,
+		is_paid TEXT,
+		link_title TEXT,
+		links TEXT, 
+		obj_kind TEXT,
+		projects TEXT,
+		release_date TEXT,
+		spiegel TEXT,
+		title TEXT,
+		uannounce TEXT,
+		url TEXT,
+		migration_status TEXT DEFAULT ''
+	)
+	`
 	sqlCreateIndex := `CREATE INDEX IF NOT EXISTS articles_migration_status_idx ON articles (migration_status)`
 
 	exec(sqlCreateArticles)
@@ -102,48 +105,163 @@ func getArticleIds(limit int) []string {
 	return ids
 }
 
-func getArticlesFromAPI(ids []string) []string {
-	articles := make([]string, 0)
+func getArticlesFromAPI(ids []string) [][]string {
+	startTime := time.Now()
+	articles := make([][]string, 0)
 	for _, id := range ids {
-		text, err := getOneArticleFromAPI(id)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		fmt.Println(text)
-		articles = append(articles, text)
+		text := getOneArticleFromAPI(id)
+		articles = append(articles, []string{id, text})
 	}
+	duration := time.Since(startTime)
+	fmt.Printf("Got %v articles in %v. \n", len(ids), duration)
 	return articles
 }
 
-func getOneArticleFromAPI(id string) (string, error) {
+func getOneArticleFromAPI(id string) string {
 	resp, err := http.Get(fmt.Sprintf(urlArticle, id))
 	if err != nil {
-		return "", err
+		fmt.Println(err)
+		return ""
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		fmt.Println(err)
+		return ""
 	}
-	return string(body), nil
+	s := string(body)
+	// ss := strings.ReplaceAll(s, "\n", " ")
+	// ss = strings.ReplaceAll(ss, "\r", " ")
+	// fmt.Println("article-->", ss[0:40])
+	return s
 
 }
 
-func saveArticles(articles []string) {
-	fmt.Printf("#%v Saved articles %v\n", pageCount, articles)
+func textsToRecords(texts [][]string) []map[string]string {
+	records := make([]map[string]string, 0)
+	for _, o := range texts {
+		id := o[0]
+		text := o[1]
+		record := map[string]string{"obj_id": id}
+		var objmap map[string]json.RawMessage
+		err := json.Unmarshal([]byte(text), &objmap)
+		if err != nil {
+			fmt.Println(err)
+			record["migration_status"] = "error"
+		} else {
+			record["migration_status"] = "success"
+			for key, val := range objmap {
+				record[key] = string(val)
+			}
+		}
+		records = append(records, record)
+	}
+	return records
+}
+
+func saveArticles(records []map[string]string) {
+	fmt.Printf("#%v Saving articles \n", pageCount)
 	pageCount++
+
+	paramsArray := make([][]interface{}, 0)
+
+	for _, record := range records {
+		// fmt.Println("Record: ***************************************")
+		// for field, val := range record {
+		// 	s := strings.ReplaceAll(val, "\n", "")
+		// 	if len(s) > 30 {
+		// 		s = s[0:30]
+		// 	}
+		// 	fmt.Println(field, ":", s)
+		// }
+
+		params := make([]interface{}, 0)
+		params = append(params, getMapVal(record, "announce"))
+		params = append(params, getMapVal(record, "authors"))
+		params = append(params, getMapVal(record, "date_modified"))
+		params = append(params, getMapVal(record, "full-text"))
+		params = append(params, getMapVal(record, "images"))
+		params = append(params, getMapVal(record, "index_priority"))
+		params = append(params, getMapVal(record, "is_active"))
+		params = append(params, getMapVal(record, "is_announce"))
+		params = append(params, getMapVal(record, "is_paid"))
+		params = append(params, getMapVal(record, "link_title"))
+		params = append(params, getMapVal(record, "links"))
+		params = append(params, getMapVal(record, "obj_kind"))
+		params = append(params, getMapVal(record, "projects"))
+		params = append(params, getMapVal(record, "release_date"))
+		params = append(params, getMapVal(record, "spiegel"))
+		params = append(params, getMapVal(record, "title"))
+		params = append(params, getMapVal(record, "uannounce"))
+		params = append(params, getMapVal(record, "url"))
+		params = append(params, getMapVal(record, "migration_status"))
+		params = append(params, getMapVal(record, "obj_id"))
+		paramsArray = append(paramsArray, params)
+	}
+
+	sqlUpdate := `
+		UPDATE articles
+		SET 
+			announce=? ,
+			authors=? ,
+			date_modified=? , 
+			"full-text"=? ,
+			images=? ,
+			index_priority=? ,
+			is_active=? ,
+			is_announce=? ,
+			is_paid=? ,
+			link_title=? ,
+			links=? , 
+			obj_kind=? ,
+			projects=? ,
+			release_date=? ,
+			spiegel=? ,
+			title=? ,
+			uannounce=? ,
+			url=? ,
+			migration_status=? 
+		WHERE 
+			obj_id = ?
+	`
+	execMany(sqlUpdate, paramsArray)
+}
+
+func getMapVal(m map[string]string, key string) interface{} {
+	v, ok := m[key]
+	if !ok {
+		return nil
+	}
+	return v
 }
 
 func exec(sqlText string) {
 	db, err := sql.Open("sqlite3", dbFileName)
+	defer db.Close()
 	checkErr(err)
 	stmt, err := db.Prepare(sqlText)
+	defer stmt.Close()
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
-	err = db.Close()
+	// err = db.Close()
+	// checkErr(err)
+}
+
+func execMany(sqlText string, paramsArray [][]interface{}) {
+	db, err := sql.Open("sqlite3", dbFileName)
+	defer db.Close()
 	checkErr(err)
+
+	for _, params := range paramsArray {
+		stmt, err := db.Prepare(sqlText)
+		checkErr(err)
+		_, err = stmt.Exec(params...)
+		checkErr(err)
+		defer stmt.Close()
+	}
+	// err = db.Close()
+	// checkErr(err)
 }
 
 func checkErr(err error) {
