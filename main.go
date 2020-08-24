@@ -131,9 +131,6 @@ func getOneArticleFromAPI(id string) string {
 		return ""
 	}
 	s := string(body)
-	// ss := strings.ReplaceAll(s, "\n", " ")
-	// ss = strings.ReplaceAll(ss, "\r", " ")
-	// fmt.Println("article-->", ss[0:40])
 	return s
 
 }
@@ -167,15 +164,6 @@ func saveArticles(records []map[string]string) {
 	paramsArray := make([][]interface{}, 0)
 
 	for _, record := range records {
-		// fmt.Println("Record: ***************************************")
-		// for field, val := range record {
-		// 	s := strings.ReplaceAll(val, "\n", "")
-		// 	if len(s) > 30 {
-		// 		s = s[0:30]
-		// 	}
-		// 	fmt.Println(field, ":", s)
-		// }
-
 		params := make([]interface{}, 0)
 		params = append(params, getMapVal(record, "announce"))
 		params = append(params, getMapVal(record, "authors"))
@@ -231,7 +219,7 @@ func saveArticles(records []map[string]string) {
 func getMapVal(m map[string]string, key string) interface{} {
 	v, ok := m[key]
 	if !ok {
-		return "empty"
+		return nil
 	}
 	v = strings.Trim(v, "\"")
 	return v
