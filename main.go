@@ -6,41 +6,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var dbFileName = `rg.db`
-var pageSize = 20
-var pageCount = 0
 var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-%v.json"
-var sleepTime = time.Second
 
 func main() {
 	// Порождаем таблицу articles
-	createArticlesTable()
-	// Заполняем ее пустыми записями с идентификаторами из таблицы rubrics_articles
+	// createArticlesTable()
+	// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
 	//fillArticlesWithIds()
-	//Берем первую порцию идентификаторов из таблицы articles
-	ids := getArticleIds(pageSize)
-	// Если в порции есть идентификаторы
-	for len(ids) > 0 {
-		//Запрашиваем тексты статей
-		articleTexts := getArticlesFromAPI(ids)
-		articleRecords := textsToRecords(articleTexts)
-		// Сохраняем их в базу данных
-		saveArticles(articleRecords)
-		// Берем следующую порцию идентификаторов
-		time.Sleep(sleepTime)
-		ids = getArticleIds(pageSize)
-	}
+	// Заполняем таблицу articles текстами из API
+	fillArticlesWithTexts()
 
-	// Когда нет больше идентификаторов, завершаем.
 	fmt.Println("DONE")
 }
 
+// Порождает таблицу articles в базе данных
 func createArticlesTable() {
 	sqlCreateArticles := `
 	CREATE TABLE IF NOT EXISTS articles(
@@ -74,6 +59,8 @@ func createArticlesTable() {
 	fmt.Println("Indexes for articles table created")
 }
 
+// Заполняет таблицу articles идентификаторами статей полученными
+// из таблицы связей rubrics_objects
 func fillArticlesWithIds() {
 	sqlFillArticlesWithIds := `
 	INSERT OR IGNORE INTO articles
@@ -88,7 +75,41 @@ func fillArticlesWithIds() {
 	fmt.Println("Articles table is filled with ids")
 }
 
+// Заполняет таблицу articles текстами из API
+func fillArticlesWithTexts() {
+	// Количество запросов к API выполняемых параллельно
+	var batchSize = 30
+	// время отдыха между порциями запросов
+	var sleepTime = time.
+	// Счетчик сделаных запросов
+	counter := 0
+	//Время начала процесса
+	startTime := time.Now()
+
+	//Берем первую порцию идентификаторов из таблицы articles
+	ids := getArticleIds(batchSize)
+	// Пока в порции в порции есть идентификаторы
+	for len(ids) > 0 {
+		//Запрашиваем тексты статей
+		articleTexts := getAPITextsParallel(ids)
+		// преобразовываем тексты в записи - массивы полей материала
+		articleRecords := textsToArticleRecords(articleTexts)
+		// Сохраняем записи в базу данных
+		saveArticlesToDatabase(articleRecords)
+		// Берем следующую порцию идентификаторов
+		counter += len(ids)
+		fmt.Printf("Migrated total %v articles in %v. ------------------------\n", counter, time.Since(startTime))
+
+		time.Sleep(sleepTime)
+		ids = getArticleIds(batchSize)
+	}
+
+}
+
+// Получает массив идентификаторов статей из базы данных
+// в которых поле migration_status не заполнено.
 func getArticleIds(limit int) []string {
+	startTime := time.Now()
 	db, err := sql.Open("sqlite3", dbFileName)
 	checkErr(err)
 	rows, err := db.Query("SELECT obj_id FROM articles WHERE migration_status = '' LIMIT " + fmt.Sprint(limit))
@@ -103,63 +124,89 @@ func getArticleIds(limit int) []string {
 	rows.Close() //good habit to close
 	err = db.Close()
 	checkErr(err)
+	fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
 	return ids
 }
 
-func getArticlesFromAPI(ids []string) [][]string {
+// Делает последовательные запросы к API возвращая массив пар:
+// [ [id, text], [id,text],...]
+func getAPITexts(ids []string) [][]string {
 	startTime := time.Now()
 	articles := make([][]string, 0)
 	for _, id := range ids {
-		text := getOneArticleFromAPI(id)
-		articles = append(articles, []string{id, text})
+		articles = append(articles, getOneArticleFromAPI(id))
 	}
 	duration := time.Since(startTime)
 	fmt.Printf("Got %v articles in %v. \n", len(ids), duration)
 	return articles
 }
 
-func getOneArticleFromAPI(id string) string {
+// Делает параллельные запросы к API возвращая массив пар:
+// [ [id, text], [id,text],...]
+func getAPITextsParallel(ids []string) [][]string {
+	startTime := time.Now()
+	articles := make([][]string, 0)
+	ch := make(chan []string)
+
+	for _, id := range ids {
+		go func(id string) {
+			ch <- getOneArticleFromAPI(id)
+		}(id)
+	}
+
+	for range ids {
+		v := <-ch
+		articles = append(articles, v)
+	}
+	close(ch)
+
+	fmt.Printf("Got %v articles in %v. \n", len(ids), time.Since(startTime))
+	return articles
+}
+
+// Возвращает id материала и его текст в виде [id, text] из API
+func getOneArticleFromAPI(id string) []string {
 	resp, err := http.Get(fmt.Sprintf(urlArticle, id))
 	if err != nil {
 		fmt.Println(err)
-		return ""
+		return []string{id, ""}
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
-		return ""
+		return []string{id, ""}
 	}
 	s := string(body)
-	return s
-
+	return []string{id, s}
 }
 
-func textsToRecords(texts [][]string) []map[string]string {
-	records := make([]map[string]string, 0)
+// Преобразует массив текстов в массив записей.
+// Запись это отображение: имя_поля -> значение_поля
+func textsToArticleRecords(texts [][]string) []map[string]interface{} {
+	records := make([]map[string]interface{}, 0)
 	for _, o := range texts {
 		id := o[0]
 		text := o[1]
-		record := map[string]string{"obj_id": id}
-		var objmap map[string]json.RawMessage
+		// record := map[string]string{"obj_id": id}
+		var objmap map[string]interface{} //json.RawMessage
 		err := json.Unmarshal([]byte(text), &objmap)
 		if err != nil {
 			fmt.Println(err)
-			record["migration_status"] = "error"
+			objmap["obj_id"] = id
+			objmap["migration_status"] = "error"
 		} else {
-			record["migration_status"] = "success"
-			for key, val := range objmap {
-				record[key] = string(val)
-			}
+			objmap["migration_status"] = "success"
 		}
-		records = append(records, record)
+		records = append(records, objmap)
 	}
 	return records
 }
 
-func saveArticles(records []map[string]string) {
-	fmt.Printf("#%v Saving articles \n", pageCount)
-	pageCount++
+// Сохраняет массив записей в базу данных.
+// Запись представляет собой map[string]interface{}.
+func saveArticlesToDatabase(records []map[string]interface{}) {
+	startTime := time.Now()
 
 	paramsArray := make([][]interface{}, 0)
 
@@ -214,17 +261,30 @@ func saveArticles(records []map[string]string) {
 			obj_id=?
 	`
 	execMany(sqlUpdate, paramsArray)
+	fmt.Printf("Saved %v articles to database in %v. \n", len(records), time.Since(startTime))
 }
 
-func getMapVal(m map[string]string, key string) interface{} {
+// Получает значение поля из отображения.
+// Возвращает NULL в случае отсутствия поля,
+// и тестовое представление если поле содержит JSON.
+func getMapVal(m map[string]interface{}, key string) interface{} {
 	v, ok := m[key]
 	if !ok {
 		return nil
 	}
-	v = strings.Trim(v, "\"")
-	return v
+	s, ok := v.(string)
+	if ok {
+		return s
+	}
+
+	b, err := json.Marshal(v)
+	if err == nil {
+		s = string(b)
+	}
+	return s
 }
 
+// Исполняет запрос к базе данных
 func exec(sqlText string) {
 	db, err := sql.Open("sqlite3", dbFileName)
 	defer db.Close()
@@ -234,10 +294,10 @@ func exec(sqlText string) {
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
-	// err = db.Close()
-	// checkErr(err)
 }
 
+// Исполняет несколько параметризованных запросов на обновление или вставку.
+// Если запрос не прошел, печатает сообщение.
 func execMany(sqlText string, paramsArray [][]interface{}) {
 	db, err := sql.Open("sqlite3", dbFileName)
 	// defer db.Close()
@@ -248,6 +308,7 @@ func execMany(sqlText string, paramsArray [][]interface{}) {
 	for _, params := range paramsArray {
 		res, err := stmt.Exec(params...)
 		checkErr(err)
+		// Если запрос не затронул ни одну запись, выводим сообщение.
 		affect, err := res.RowsAffected()
 		checkErr(err)
 		if affect == 0 {
@@ -260,6 +321,7 @@ func execMany(sqlText string, paramsArray [][]interface{}) {
 	checkErr(err)
 }
 
+// Печатаем сообщение об ошибке
 func checkErr(err error) {
 	if err != nil {
 		fmt.Print(err)
