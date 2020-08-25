@@ -109,7 +109,7 @@ func fillArticlesWithTexts() {
 // Получает массив идентификаторов статей из базы данных
 // в которых поле migration_status не заполнено.
 func getArticleIds(limit int) []string {
-	startTime := time.Now()
+	// startTime := time.Now()
 	db, err := sql.Open("sqlite3", dbFileName)
 	checkErr(err)
 	rows, err := db.Query("SELECT obj_id FROM articles WHERE migration_status = '' LIMIT " + fmt.Sprint(limit))
@@ -124,7 +124,7 @@ func getArticleIds(limit int) []string {
 	rows.Close() //good habit to close
 	err = db.Close()
 	checkErr(err)
-	fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
+	// fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
 	return ids
 }
 
@@ -219,7 +219,7 @@ func textsToArticleRecords(texts [][]string) []map[string]interface{} {
 // Сохраняет массив записей в базу данных.
 // Запись представляет собой map[string]interface{}.
 func saveArticlesToDatabase(records []map[string]interface{}) {
-	startTime := time.Now()
+	// startTime := time.Now()
 
 	paramsArray := make([][]interface{}, 0)
 
@@ -274,7 +274,7 @@ func saveArticlesToDatabase(records []map[string]interface{}) {
 			obj_id=?
 	`
 	execMany(sqlUpdate, paramsArray)
-	fmt.Printf("Saved %v articles to database in %v. \n", len(records), time.Since(startTime))
+	// fmt.Printf("Saved %v articles to database in %v. \n", len(records), time.Since(startTime))
 }
 
 // Получает значение поля из отображения.
