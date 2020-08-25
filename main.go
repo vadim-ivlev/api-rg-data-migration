@@ -18,7 +18,7 @@ func main() {
 	// Порождаем таблицу articles
 	// createArticlesTable()
 	// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
-	//fillArticlesWithIds()
+	// fillArticlesWithIds()
 	// Заполняем таблицу articles текстами из API
 	fillArticlesWithTexts()
 
@@ -166,7 +166,20 @@ func getAPITextsParallel(ids []string) [][]string {
 
 // Возвращает id материала и его текст в виде [id, text] из API
 func getOneArticleFromAPI(id string) []string {
-	resp, err := http.Get(fmt.Sprintf(urlArticle, id))
+	client := http.Client{
+		Timeout: time.Duration(20 * time.Second),
+	}
+
+	req, err := http.NewRequest("GET", fmt.Sprintf(urlArticle, id), nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	req.Close = true
+	req.Header.Set("Connection", "close")
+
+	resp, err := client.Do(req)
+
+	// resp, err := http.Get(fmt.Sprintf(urlArticle, id))
 	if err != nil {
 		fmt.Println(err)
 		return []string{id, ""}
