@@ -78,10 +78,10 @@ func fillArticlesWithIds() {
 // Заполняет таблицу articles текстами из API
 func fillArticlesWithTexts() {
 	// Количество запросов к API выполняемых параллельно
-	var batchSize = 30
+	var batchSize = 50
 	// время отдыха между порциями запросов
-	var sleepTime = time.
-	// Счетчик сделаных запросов
+	var sleepTime = 50 * time.Millisecond
+	// Счетчик сделанных запросов
 	counter := 0
 	//Время начала процесса
 	startTime := time.Now()
