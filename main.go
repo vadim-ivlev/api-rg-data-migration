@@ -206,6 +206,7 @@ func textsToArticleRecords(texts [][]string) []map[string]interface{} {
 		err := json.Unmarshal([]byte(text), &objmap)
 		if err != nil {
 			fmt.Println(err)
+			objmap = make(map[string]interface{})
 			objmap["obj_id"] = id
 			objmap["migration_status"] = "error"
 		} else {
