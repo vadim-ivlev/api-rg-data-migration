@@ -3,26 +3,55 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Ия файла базы данных
 var dbFileName = `rg.db`
+
+// Конечная точка API для получения текста материала. См. https://works.rg.ru/project/docs/?section=8
 var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-%v.json"
 
+// Таймаут запросов к API
+var requestTimeout = 30
+
 func main() {
-	// Порождаем таблицу articles
-	// createArticlesTable()
-	// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
-	// fillArticlesWithIds()
+	// считать параметры командной строки
+	// batchSize Количество одновременных запросов к API.
+	// status Значение поля migration_status, записей подлежащих обновлению.
+	batchSize, status, createTable := readCommandLineParams()
+	if createTable {
+		// Порождаем таблицу articles
+		createArticlesTable()
+		// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
+		fillArticlesWithIds()
+	}
 	// Заполняем таблицу articles текстами из API
-	fillArticlesWithTexts()
+	fillArticlesWithTexts(batchSize, status)
 
 	fmt.Println("DONE")
+}
+
+// readCommandLineParams читает параметры командной строки
+func readCommandLineParams() (batchSize int, status string, createTable bool) {
+	flag.IntVar(&batchSize, "batchSize", 50, "Количество запросов выполняемых одновременно")
+	flag.StringVar(&status, "status", "", "Значение поля migration_status обновляемых записей")
+	flag.BoolVar(&createTable, "createTable ", false, "Создать таблицу и заполнить ее идентификаторами.")
+
+	flag.Parse()
+	// fmt.Println("\nПример запуска: ./auth-proxy -serve 4400 -env=dev\n ")
+	flag.Usage()
+	if batchSize == 0 {
+		os.Exit(0)
+	}
+	return
 }
 
 // Порождает таблицу articles в базе данных
@@ -75,10 +104,10 @@ func fillArticlesWithIds() {
 	fmt.Println("Articles table is filled with ids")
 }
 
-// Заполняет таблицу articles текстами из API
-func fillArticlesWithTexts() {
-	// Количество запросов к API выполняемых параллельно
-	var batchSize = 50
+// Заполняет таблицу articles текстами из API.
+// batchSize Количество одновременных запросов к API.
+// status Значение поля migration_status, записей подлежащих обновлению.
+func fillArticlesWithTexts(batchSize int, status string) {
 	// время отдыха между порциями запросов
 	var sleepTime = 50 * time.Millisecond
 	// Счетчик сделанных запросов
@@ -87,7 +116,7 @@ func fillArticlesWithTexts() {
 	startTime := time.Now()
 
 	//Берем первую порцию идентификаторов из таблицы articles
-	ids := getArticleIds(batchSize)
+	ids := getArticleIds(batchSize, status)
 	// Пока в порции в порции есть идентификаторы
 	for len(ids) > 0 {
 		//Запрашиваем тексты статей
@@ -107,18 +136,18 @@ func fillArticlesWithTexts() {
 		// отдыхаем
 		time.Sleep(sleepTime)
 		// Берем следующую порцию идентификаторов
-		ids = getArticleIds(batchSize)
+		ids = getArticleIds(batchSize, status)
 	}
 
 }
 
-// Получает массив идентификаторов статей из базы данных
-// в которых поле migration_status не заполнено.
-func getArticleIds(limit int) []string {
-	// startTime := time.Now()
+// Получает массив идентификаторов (размером не более limit) статей из базы данных,
+// в которых поле migration_status имеет значение статус.
+func getArticleIds(limit int, status string) []string {
+	startTime := time.Now()
 	db, err := sql.Open("sqlite3", dbFileName)
 	checkErr(err)
-	rows, err := db.Query("SELECT obj_id FROM articles WHERE migration_status = '' LIMIT " + fmt.Sprint(limit))
+	rows, err := db.Query(fmt.Sprintf("SELECT obj_id FROM articles WHERE migration_status = '%s' LIMIT %d", status, limit))
 	checkErr(err)
 	var id string
 	ids := make([]string, 0)
@@ -130,7 +159,7 @@ func getArticleIds(limit int) []string {
 	rows.Close() //good habit to close
 	err = db.Close()
 	checkErr(err)
-	// fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
+	fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
 	return ids
 }
 
@@ -173,7 +202,7 @@ func getAPITextsParallel(ids []string) [][]string {
 // Возвращает id материала и его текст в виде [id, text] из API
 func getOneArticleFromAPI(id string) []string {
 	client := http.Client{
-		Timeout: time.Duration(20 * time.Second),
+		Timeout: time.Duration(requestTimeout) * time.Second,
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf(urlArticle, id), nil)
