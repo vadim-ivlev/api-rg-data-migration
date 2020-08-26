@@ -18,8 +18,11 @@ objects.json
 __pycache__
 .ropeproject
 *.db
+*.db-journal
 *.zip
 run*
 api-rg-data-migration
+save_articles
+
 
 

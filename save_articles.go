@@ -26,7 +26,9 @@ func main() {
 	// считать параметры командной строки
 	// batchSize Количество одновременных запросов к API.
 	// status Значение поля migration_status, записей подлежащих обновлению.
-	batchSize, status, createTable := readCommandLineParams()
+	// showTiming Показывать времена исполнения
+	batchSize, status, createTable, showTiming := readCommandLineParams()
+	fmt.Println("showTiming=", showTiming)
 	if createTable {
 		// Порождаем таблицу articles
 		createArticlesTable()
@@ -34,16 +36,17 @@ func main() {
 		fillArticlesWithIds()
 	}
 	// Заполняем таблицу articles текстами из API
-	fillArticlesWithTexts(batchSize, status)
+	fillArticlesWithTexts(batchSize, status, showTiming)
 
 	fmt.Println("DONE")
 }
 
 // readCommandLineParams читает параметры командной строки
-func readCommandLineParams() (batchSize int, status string, createTable bool) {
+func readCommandLineParams() (batchSize int, status string, createTable bool, showTiming bool) {
 	flag.IntVar(&batchSize, "batchSize", 50, "Количество запросов выполняемых одновременно")
 	flag.StringVar(&status, "status", "", "Значение поля migration_status обновляемых записей")
-	flag.BoolVar(&createTable, "createTable ", false, "Создать таблицу и заполнить ее идентификаторами.")
+	flag.BoolVar(&createTable, "createTable", false, "Создать таблицу и заполнить ее идентификаторами.")
+	flag.BoolVar(&showTiming, "showTiming", false, "Показывать времена исполнения")
 
 	flag.Parse()
 	// fmt.Println("\nПример запуска: ./auth-proxy -serve 4400 -env=dev\n ")
@@ -107,7 +110,8 @@ func fillArticlesWithIds() {
 // Заполняет таблицу articles текстами из API.
 // batchSize Количество одновременных запросов к API.
 // status Значение поля migration_status, записей подлежащих обновлению.
-func fillArticlesWithTexts(batchSize int, status string) {
+// showTiming Показывать времена исполнения
+func fillArticlesWithTexts(batchSize int, status string, showTiming bool) {
 	// время отдыха между порциями запросов
 	var sleepTime = 50 * time.Millisecond
 	// Счетчик сделанных запросов
@@ -116,15 +120,15 @@ func fillArticlesWithTexts(batchSize int, status string) {
 	startTime := time.Now()
 
 	//Берем первую порцию идентификаторов из таблицы articles
-	ids := getArticleIds(batchSize, status)
+	ids := getArticleIds(batchSize, status, showTiming)
 	// Пока в порции в порции есть идентификаторы
 	for len(ids) > 0 {
 		//Запрашиваем тексты статей
-		articleTexts := getAPITextsParallel(ids)
+		articleTexts := getAPITextsParallel(ids, showTiming)
 		// преобразовываем тексты в записи - массивы полей материала
 		articleRecords := textsToArticleRecords(articleTexts)
 		// Сохраняем записи в базу данных
-		saveArticlesToDatabase(articleRecords)
+		saveArticlesToDatabase(articleRecords, showTiming)
 
 		// Выводим сообщение
 		counter += len(ids)
@@ -136,14 +140,14 @@ func fillArticlesWithTexts(batchSize int, status string) {
 		// отдыхаем
 		time.Sleep(sleepTime)
 		// Берем следующую порцию идентификаторов
-		ids = getArticleIds(batchSize, status)
+		ids = getArticleIds(batchSize, status, showTiming)
 	}
 
 }
 
 // Получает массив идентификаторов (размером не более limit) статей из базы данных,
 // в которых поле migration_status имеет значение статус.
-func getArticleIds(limit int, status string) []string {
+func getArticleIds(limit int, status string, showTiming bool) []string {
 	startTime := time.Now()
 	db, err := sql.Open("sqlite3", dbFileName)
 	checkErr(err)
@@ -159,7 +163,9 @@ func getArticleIds(limit int, status string) []string {
 	rows.Close() //good habit to close
 	err = db.Close()
 	checkErr(err)
-	fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
+	if showTiming {
+		fmt.Printf("Got %v ids in %v. \n", len(ids), time.Since(startTime))
+	}
 	return ids
 }
 
@@ -178,8 +184,8 @@ func getAPITexts(ids []string) [][]string {
 
 // Делает параллельные запросы к API возвращая массив пар:
 // [ [id, text], [id,text],...]
-func getAPITextsParallel(ids []string) [][]string {
-	// startTime := time.Now()
+func getAPITextsParallel(ids []string, showTiming bool) [][]string {
+	startTime := time.Now()
 	articles := make([][]string, 0)
 	ch := make(chan []string)
 
@@ -194,8 +200,9 @@ func getAPITextsParallel(ids []string) [][]string {
 		articles = append(articles, v)
 	}
 	close(ch)
-
-	// fmt.Printf("Got %v articles in %v. \n", len(ids), time.Since(startTime))
+	if showTiming {
+		fmt.Printf("Got %v articles in %v. \n", len(ids), time.Since(startTime))
+	}
 	return articles
 }
 
@@ -254,8 +261,8 @@ func textsToArticleRecords(texts [][]string) []map[string]interface{} {
 
 // Сохраняет массив записей в базу данных.
 // Запись представляет собой map[string]interface{}.
-func saveArticlesToDatabase(records []map[string]interface{}) {
-	// startTime := time.Now()
+func saveArticlesToDatabase(records []map[string]interface{}, showTiming bool) {
+	startTime := time.Now()
 
 	paramsArray := make([][]interface{}, 0)
 
@@ -310,7 +317,9 @@ func saveArticlesToDatabase(records []map[string]interface{}) {
 			obj_id=?
 	`
 	execMany(sqlUpdate, paramsArray)
-	// fmt.Printf("Saved %v articles to database in %v. \n", len(records), time.Since(startTime))
+	if showTiming {
+		fmt.Printf("Saved %v articles to database in %v. \n", len(records), time.Since(startTime))
+	}
 }
 
 // Получает значение поля из отображения.
