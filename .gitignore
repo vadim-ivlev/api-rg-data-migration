@@ -19,7 +19,7 @@ __pycache__
 .ropeproject
 *.db
 *.zip
-run
+run*
 api-rg-data-migration
 
 

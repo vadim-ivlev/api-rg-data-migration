@@ -96,11 +96,17 @@ func fillArticlesWithTexts() {
 		articleRecords := textsToArticleRecords(articleTexts)
 		// Сохраняем записи в базу данных
 		saveArticlesToDatabase(articleRecords)
-		// Берем следующую порцию идентификаторов
-		counter += len(ids)
-		fmt.Printf("Migrated total %v articles in %v. ------------------------\n", counter, time.Since(startTime))
 
+		// Выводим сообщение
+		counter += len(ids)
+		duration := time.Since(startTime)
+		durationHours := float64(duration) / float64(time.Hour)
+		articlesPerHour := float64(counter) / durationHours
+		fmt.Printf("Migrated total %8d articles in %v. Average migration rate = %.0f per hour. \n", counter, duration, articlesPerHour)
+
+		// отдыхаем
 		time.Sleep(sleepTime)
+		// Берем следующую порцию идентификаторов
 		ids = getArticleIds(batchSize)
 	}
 
@@ -131,20 +137,20 @@ func getArticleIds(limit int) []string {
 // Делает последовательные запросы к API возвращая массив пар:
 // [ [id, text], [id,text],...]
 func getAPITexts(ids []string) [][]string {
-	startTime := time.Now()
+	// startTime := time.Now()
 	articles := make([][]string, 0)
 	for _, id := range ids {
 		articles = append(articles, getOneArticleFromAPI(id))
 	}
-	duration := time.Since(startTime)
-	fmt.Printf("Got %v articles in %v. \n", len(ids), duration)
+	// duration := time.Since(startTime)
+	// fmt.Printf("Got %v articles in %v. \n", len(ids), duration)
 	return articles
 }
 
 // Делает параллельные запросы к API возвращая массив пар:
 // [ [id, text], [id,text],...]
 func getAPITextsParallel(ids []string) [][]string {
-	startTime := time.Now()
+	// startTime := time.Now()
 	articles := make([][]string, 0)
 	ch := make(chan []string)
 
@@ -160,7 +166,7 @@ func getAPITextsParallel(ids []string) [][]string {
 	}
 	close(ch)
 
-	fmt.Printf("Got %v articles in %v. \n", len(ids), time.Since(startTime))
+	// fmt.Printf("Got %v articles in %v. \n", len(ids), time.Since(startTime))
 	return articles
 }
 
