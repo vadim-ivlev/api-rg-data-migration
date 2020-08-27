@@ -3,6 +3,11 @@
 Цель проекта - миграция данных из API RGRU в базу данных SQLite. 
 Это часть проекта по автоматическому формированию врезок к материалам RG.
 
+## Результат
+
+Можно скачать здесь: <https://1drv.ms/u/s!AmtnhvXAi-RmgoQuuTUD4gdrYrJPyA?e=L4175E> 
+(Пароль: rosg******)
+
 
 Исполняемый код выкачивает данные из API RGRU и сохраняет их базу данных SQLite rg.rb.
 База данных содержит три таблицы:
@@ -11,6 +16,49 @@
  (id)    --<   (rubric_id, object_id)  >---  (obj_id)
 
 ```
+```sql
+> sqlite-utils tables --table --counts  --schema rg.db
+
+table              count  schema
+---------------  -------  -----------------------------------------
+rubrics             1153  CREATE TABLE rubrics (
+                                  id TEXT PRIMARY KEY,
+                                  parent_id TEXT,
+                                  title TEXT,
+                                  uri TEXT
+                              )
+rubrics_objects  3053116  CREATE TABLE rubrics_objects (
+                                  rubric_id TEXT,
+                                  object_id TEXT,
+                                  datetime TEXT,
+                                  kind TEXT,
+                                  PRIMARY KEY(rubric_id, object_id)
+                              )
+articles         1202159  CREATE TABLE articles(
+                                        obj_id TEXT PRIMARY KEY,
+                                        announce TEXT,
+                                        authors TEXT,
+                                        date_modified TEXT,
+                                        "full-text" TEXT,
+                                        images TEXT,
+                                        index_priority TEXT,
+                                        is_active TEXT,
+                                        is_announce TEXT,
+                                        is_paid TEXT,
+                                        link_title TEXT,
+                                        links TEXT,
+                                        obj_kind TEXT,
+                                        projects TEXT,
+                                        release_date TEXT,
+                                        spiegel TEXT,
+                                        title TEXT,
+                                        uannounce TEXT,
+                                        url TEXT,
+                                        migration_status TEXT DEFAULT ''
+                                )
+
+```
+
 Названия полей таблиц соответствуют названиям полей данных API.
 
 Исполнение программы
@@ -18,7 +66,7 @@
 Исполнение должно выполняться в три этапа в строгой последовательности указанными командами. 
 Каждый этап создает и наполняет данными одну таблицу. 
 
-Если установлен Python v>3.7 и Go:
+Если установлен Python v>3.7 и Go выполните `pip install -r python/requirements.txt`, а затем:
 
 1. `python/1_save_rubrics.py` - сохранение рубрик в таблицу rubrics. (~ 1 тыс. записей)
 2. `python/2_save_rubrics_objects.py` - сохранение связей рубрики-объекты в таблицу rubrics_objects. ~3 млн записей.
