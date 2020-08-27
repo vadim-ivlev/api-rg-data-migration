@@ -67,17 +67,17 @@ articles         1202159  CREATE TABLE articles(
 Исполнение должно выполняться в три этапа в строгой последовательности указанными командами. 
 Каждый этап создает и наполняет данными одну таблицу. 
 
-Если установлен Python v>3.7 и Go выполните `pip install -r python/requirements.txt`, а затем:
+Если установлен python v>3.7 и Go выполните `pip install -r python/requirements.txt`, а затем:
 
 1. `python/1_save_rubrics.py` - сохранение рубрик в таблицу rubrics. (~ 1 тыс. записей)
 2. `python/2_save_rubrics_objects.py` - сохранение связей рубрики-объекты в таблицу rubrics_objects. ~3 млн записей.
 3. `./save_articles` - сохранение статей в таблицу articles. ~ 1,5 млн записей 
 
-Если нет не компьютере не установлен Python, но есть docker:
+Если python не установлен, но есть docker:
 
 1. `docker run --rm  -v "$PWD:/app" -w "/app" python:3.7-alpine  sh -c "pip install -r python/requirements.txt && python python/1_save_rubrics.py"`
 2. `docker run --rm  -v "$PWD:/app" -w "/app" python:3.7-alpine  sh -c "pip install -r python/requirements.txt && python python/1_save_rubrics_objects.py"`
-3. `./save_articles` или `go run *.go` 
+3. `./save_articles` 
 
 **Примечание**: Исполнямый файл `save_articles` создается командой `./build.sh`,
 Если на компьютере установлен go. можно запустить программу и без компиляции командой `go run *.go`. 
