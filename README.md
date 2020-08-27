@@ -70,7 +70,7 @@ articles         1202159  CREATE TABLE articles(
 Если установлен python v>3.7 и Go выполните `pip install -r python/requirements.txt`, а затем:
 
 1. `python/1_save_rubrics.py` - сохранение рубрик в таблицу rubrics. (~ 1 тыс. записей)
-2. `python/2_save_rubrics_objects.py` - сохранение связей рубрики-объекты в таблицу rubrics_objects. ~3 млн записей.
+2. `python/2_save_rubrics_objects.py` - сохранение таблицы связей rubrics_objects. ~3 млн записей.
 3. `./save_articles` - сохранение статей в таблицу articles. ~ 1,5 млн записей 
 
 Если python не установлен, но есть docker:
