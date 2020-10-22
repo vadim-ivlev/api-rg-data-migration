@@ -10,8 +10,9 @@ import time
 def main():
     "сохраняет связи рубрикатор-объект в базе данных"
 
-    print("Creating rubrics_objects table in database...")
     create_rubrics_objects_table()
+    if n>0:
+        print("Создана таблица rubrics_objects_new")
 
     print("Getting rubric ids ...")
     ids = get_rubric_ids()
@@ -25,21 +26,26 @@ def create_rubrics_objects_table():
     
     # Запрос на порождение таблицы
     sql_create_rubrics_objects = """
-    CREATE TABLE  rubrics_objects (
+    DROP TABLE IF EXISTS rubrics_objects_new;
+    DROP INDEX IF EXISTS rubrics_objects_new_kind_idx;
+
+    CREATE TABLE IF NOT EXISTS rubrics_objects_new (
         rubric_id TEXT, 
         object_id TEXT,
         datetime TEXT, 
         kind TEXT,
         PRIMARY KEY(rubric_id, object_id)
     );
+
+    CREATE INDEX rubrics_objects_new_kind_idx ON rubrics_objects_new (kind);
     """
-    sql_create_index = "CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects (kind);"
+    # sql_create_index = "CREATE INDEX rubrics_objects_new_kind_idx ON rubrics_objects_new (kind);"
 
     conn = sqlite3.connect(db.db_filename)
     n = db.execute(conn, sql_create_rubrics_objects )
-    n = db.execute(conn, sql_create_index )
-    print(f'{n} rubrics_objects table is created')
+    # n = db.execute(conn, sql_create_index )
     conn.close()
+    return n
 
 
 def get_rubric_ids():

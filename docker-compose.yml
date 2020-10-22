@@ -2,11 +2,33 @@ version: '3'
 
 services:
 
-  cont:
-    image: "alpine"
-    # user: "5000:5000"
-    working_dir: /app/go
-    volumes:
-      - .:/app
-    command: "./api-rg-data-migration"
+    cont:
+        image: "alpine"
+        # user: "5000:5000"
+        working_dir: /app/go
+        volumes:
+            - .:/app
+        # command: "./api-rg-data-migration"
+    
 
+    api-rg-rubrics:
+        image: api-rg-rubrics
+        build: 
+            context: .
+            dockerfile: Dockerfile-python
+        container_name: api-rg-rubrics
+        restart: unless-stopped
+        volumes:
+            - ./python:/usr/src/app
+
+        environment: 
+            - RGPASS=${PGPASSWORD}
+            - RGDSN=host=134.0.107.93 port=5432 dbname=rgdb user=root password=rosgas2011
+        command: sleep 5000
+
+# outer network to communicate with other services ----------------------------------------------------
+networks:
+    default:
+        external:
+            name: auth_proxy_network
+    

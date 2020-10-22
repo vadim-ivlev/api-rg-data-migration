@@ -1,8 +1,8 @@
 image: golang:1.14.2
 
 variables:
-    IMAGE_NAME: log-monitor-prod
-    BUILD_PATH: /builds/masterback/log-monitor
+    IMAGE_NAME: api-rg-data-migration-prod
+    BUILD_PATH: /builds/masterback/api-rg-data-migration
 
 stages:
     - deploy&copy

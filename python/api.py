@@ -3,7 +3,7 @@
 
 import requests
 import json
-import db
+# import db
 
 url_proxy = 'https://outer.rg.ru/plain/proxy/?query='
 

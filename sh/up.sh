@@ -2,7 +2,7 @@
 
 
 echo "поднимаем" 
-docker-compose up -d
+docker-compose up -d --build
 
 echo "поясняем"
 sh/greetings.sh
