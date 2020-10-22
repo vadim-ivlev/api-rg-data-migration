@@ -1,7 +1,7 @@
 # сохраняет связи рубрикатор-объект в базе данных
 import db
 import api
-import sqlite3
+# import sqlite3
 import json
 import os
 import time
@@ -10,9 +10,10 @@ import time
 def main():
     "сохраняет связи рубрикатор-объект в базе данных"
 
-    create_rubrics_objects_table()
-    if n>0:
-        print("Создана таблица rubrics_objects_new")
+    n = create_rubrics_objects_table()
+    if n==0 :
+        return
+    print("Создана таблица rubrics_objects_new")
 
     print("Getting rubric ids ...")
     ids = get_rubric_ids()
@@ -41,22 +42,22 @@ def create_rubrics_objects_table():
     """
     # sql_create_index = "CREATE INDEX rubrics_objects_new_kind_idx ON rubrics_objects_new (kind);"
 
-    conn = sqlite3.connect(db.db_filename)
-    n = db.execute(conn, sql_create_rubrics_objects )
+    con = db.get_connection()
+    n = db.execute(con, sql_create_rubrics_objects )
     # n = db.execute(conn, sql_create_index )
-    conn.close()
+    con.close()
     return n
 
 
 def get_rubric_ids():
     "Возвращает рубрики"
-    conn = sqlite3.connect(db.db_filename)
-    # conn.row_factory = sqlite3.Row
-    rows = conn.execute("select * from rubrics")  
+    con = db.get_connection()
+    cur = con.cursor()
+    rows = cur.execute("select * from rubrics")  
+    cur.close()
     ids = [r[0] for r in rows]
-    conn.close()
+    con.close()
     return ids
-
 
 
 def save_rubrics_objects_to_db(ids):
@@ -104,6 +105,7 @@ def save_rubric_object_links(links=[]):
     conn.close()
     print(f'{n} out of {len(links)} rubric-object links saved to database.')
     return n
+
 
 if __name__ == "__main__":
     main()

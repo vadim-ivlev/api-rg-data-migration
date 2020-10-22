@@ -5,29 +5,46 @@ import json
 import time
 
 
-def main():
+def main() -> bool:
     "сохраняет рубрикатор в базе данных"
 
     start = time.time()
     rubrics_json = api.get_text_from_url(api.url_json)
+    if rubrics_json == '' or rubrics_json is None:
+        print("Не смог прочитать API")
+        return False    
     print(f'Рубрики загружены из API за {time.time()-start:.2f} sec')
 
+
     rubrics = _make_rubrics_list(rubrics_json)
+    if len(rubrics) == 0:
+        print("Список рубрик пуст")
+        return False        
     print(f'Создан список из  {len(rubrics)} рубрик')
+    
 
     n = _create_rubrics_table()
-    if n>0:
-        print("Созданы таблица rubrics_new")
+    if n==0:
+        print("Не удалось создать таблицу rubrics_new")
+        return False        
+    print("Созданы таблица rubrics_new")
+
 
     start = time.time()
     n = _save_rubrics_to_database(rubrics)
+    if n==0:
+        print("Не удалось добавить рубрики в таблицу rubrics_new")
+        return False            
     print(f'{n} из {len(rubrics)} рубрик добавлены в БД за {time.time()-start:.2f} sec.')
 
+
     n = _replace_rubrics_table()
-    if n>0:
-        print("Таблица rubrics_new переименована.")
+    if n==0:
+        print("Не удалось переименовать таблицу rubrics_new")
+        return False        
+    print("Таблица rubrics_new переименована.")
 
-
+    return True
 
 
 
@@ -100,8 +117,8 @@ def _replace_rubrics_table():
     "Замещает таблицу rubrics таблицей rubrics_new"
 
     sql = """
-    DROP TABLE IF EXISTS rubrics1;
-    ALTER TABLE rubrics_new RENAME TO rubrics1;
+    DROP TABLE IF EXISTS rubrics;
+    ALTER TABLE rubrics_new RENAME TO rubrics;
     """
     con = db.get_connection()
     n =  db.execute(con, sql )
