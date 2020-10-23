@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -44,7 +45,7 @@ func main() {
 	createArticlesTable()
 
 	// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
-	// fillArticlesWithIds()
+	fillArticlesWithIds()
 
 	// Заполняем таблицу articles текстами из API
 	// fillArticlesWithTexts(batchSize, status, showTiming)
@@ -69,51 +70,91 @@ func readCommandLineParams() (batchSize int, status string, showTiming bool) {
 // Порождает таблицу articles в базе данных
 func createArticlesTable() {
 	sqlCreateArticles := `
-	CREATE TABLE IF NOT EXISTS articles_new(
-		obj_id TEXT PRIMARY KEY,
-		announce TEXT,
-		authors TEXT,
-		date_modified TEXT, 
-		"full-text" TEXT,
-		images TEXT,
-		index_priority TEXT,
-		is_active TEXT,
-		is_announce TEXT,
-		is_paid TEXT,
-		link_title TEXT,
-		links TEXT, 
-		obj_kind TEXT,
-		projects TEXT,
-		release_date TEXT,
-		spiegel TEXT,
-		title TEXT,
-		uannounce TEXT,
-		url TEXT,
-		migration_status TEXT DEFAULT ''
-	)
-	`
-	sqlCreateIndex := `CREATE INDEX IF NOT EXISTS articles_migration_status_idx ON articles_new (migration_status)`
+	--	CREATE TABLE IF NOT EXISTS articles_new(
+	--		obj_id TEXT PRIMARY KEY,
+	--		announce TEXT,
+	--		authors TEXT,
+	--		date_modified TEXT, 
+	--		"full-text" TEXT,
+	--		images TEXT,
+	--		index_priority TEXT,
+	--		is_active TEXT,
+	--		is_announce TEXT,
+	--		is_paid TEXT,
+	--		link_title TEXT,
+	--		links TEXT, 
+	--		obj_kind TEXT,
+	--		projects TEXT,
+	--		release_date TEXT,
+	--		spiegel TEXT,
+	--		title TEXT,
+	--		uannounce TEXT,
+	--		url TEXT,
+	--		migration_status TEXT DEFAULT ''
+	--	)
 
-	exec(sqlCreateArticles)
+	
+	DROP TABLE IF EXISTS articles_new;
+
+	CREATE TABLE IF NOT EXISTS articles_new (
+		obj_id text PRIMARY KEY,
+		announce text NULL,
+		authors text NULL,
+		date_modified text NULL,
+		"full-text" text NULL,
+		images text NULL,
+		index_priority text NULL,
+		is_active text NULL,
+		is_announce text NULL,
+		is_paid text NULL,
+		link_title text NULL,
+		links text NULL,
+		obj_kind text NULL,
+		projects text NULL,
+		release_date text NULL,
+		spiegel text NULL,
+		title text NULL,
+		uannounce text NULL,
+		url text NULL,
+		migration_status text NULL DEFAULT ''::text,
+		process_status text NULL,
+		elastic_status text NULL,
+		lemmatized_text text NULL,
+		entities_text text NULL,
+		entities_grouped text NULL
+	);
+	CREATE INDEX IF NOT EXISTS articles_migration_status__idx ON articles_new (migration_status);
+	CREATE INDEX IF NOT EXISTS articles_process_status__idx ON articles_new (process_status);
+	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx ON articles_new (elastic_status);
+	`
+	// sqlCreateIndex := `CREATE INDEX IF NOT EXISTS articles_migration_status_idx ON articles_new (migration_status)`
+
+	// exec(sqlCreateArticles)
+	mustExec(sqlCreateArticles)
 	fmt.Println("Articles table created")
-	exec(sqlCreateIndex)
-	fmt.Println("Indexes for articles table created")
+	// exec(sqlCreateIndex)
+	// fmt.Println("Indexes for articles table created")
 }
 
 // Заполняет таблицу articles идентификаторами статей полученными
 // из таблицы связей rubrics_objects
 func fillArticlesWithIds() {
+	startTime := time.Now()
 	sqlFillArticlesWithIds := `
-	INSERT OR IGNORE INTO articles
-	SELECT DISTINCT 
-	object_id, NULL, NULL, NULL, NULL, NULL, 
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
-	NULL, NULL, NULL, NULL, NULL, NULL, ""
-	FROM rubrics_objects 
-	WHERE kind = 'article'
+	INSERT INTO articles_new(obj_id)
+
+		SELECT DISTINCT rubrics_objects.object_id
+		FROM rubrics_objects LEFT JOIN articles ON rubrics_objects.object_id = articles.obj_id 
+		WHERE 
+		articles.obj_id IS NULL 
+		AND rubrics_objects.kind = 'article'
+
+	ON CONFLICT (obj_id) DO NOTHING
+	;
 	`
-	exec(sqlFillArticlesWithIds)
-	fmt.Println("Articles table is filled with ids")
+	// exec(sqlFillArticlesWithIds)
+	mustExec(sqlFillArticlesWithIds)
+	fmt.Printf("Новые записи вставлены в таблицу articles за %v \n", time.Since(startTime))
 }
 
 // Заполняет таблицу articles текстами из API.
@@ -362,6 +403,15 @@ func exec(sqlText string) {
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
+}
+
+func mustExec(sqlText string) {
+	db, err := sqlx.Open("postgres", DSN)
+	defer db.Close()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db.MustExec(sqlText)
 }
 
 // Исполняет несколько параметризованных запросов на обновление или вставку.
