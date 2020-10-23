@@ -20,7 +20,7 @@ import (
 var dbFileName = "rg.db"
 
 // DSN параметры подсоединения к postgresql
-var DSN = "host=134.0.107.93 port=5432 user=root password=rosgas2011 dbname=rgdb sslmode=disable"
+var DSN = os.Getenv("RGDSN")
 
 // Конечная точка API для получения текста материала. См. https://works.rg.ru/project/docs/?section=8
 var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-%v.json"
