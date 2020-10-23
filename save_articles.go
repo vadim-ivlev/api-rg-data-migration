@@ -70,31 +70,8 @@ func readCommandLineParams() (batchSize int, status string, showTiming bool) {
 // Порождает таблицу articles в базе данных
 func createArticlesTable() {
 	sqlCreateArticles := `
-	--	CREATE TABLE IF NOT EXISTS articles_new(
-	--		obj_id TEXT PRIMARY KEY,
-	--		announce TEXT,
-	--		authors TEXT,
-	--		date_modified TEXT, 
-	--		"full-text" TEXT,
-	--		images TEXT,
-	--		index_priority TEXT,
-	--		is_active TEXT,
-	--		is_announce TEXT,
-	--		is_paid TEXT,
-	--		link_title TEXT,
-	--		links TEXT, 
-	--		obj_kind TEXT,
-	--		projects TEXT,
-	--		release_date TEXT,
-	--		spiegel TEXT,
-	--		title TEXT,
-	--		uannounce TEXT,
-	--		url TEXT,
-	--		migration_status TEXT DEFAULT ''
-	--	)
-
 	
-	DROP TABLE IF EXISTS articles_new;
+	-- DROP TABLE IF EXISTS articles_new;
 
 	CREATE TABLE IF NOT EXISTS articles_new (
 		obj_id text PRIMARY KEY,
@@ -127,13 +104,8 @@ func createArticlesTable() {
 	CREATE INDEX IF NOT EXISTS articles_process_status__idx ON articles_new (process_status);
 	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx ON articles_new (elastic_status);
 	`
-	// sqlCreateIndex := `CREATE INDEX IF NOT EXISTS articles_migration_status_idx ON articles_new (migration_status)`
-
-	// exec(sqlCreateArticles)
 	mustExec(sqlCreateArticles)
-	fmt.Println("Articles table created")
-	// exec(sqlCreateIndex)
-	// fmt.Println("Indexes for articles table created")
+	fmt.Println("Таблица articles создана.")
 }
 
 // Заполняет таблицу articles идентификаторами статей полученными
@@ -152,7 +124,6 @@ func fillArticlesWithIds() {
 	ON CONFLICT (obj_id) DO NOTHING
 	;
 	`
-	// exec(sqlFillArticlesWithIds)
 	mustExec(sqlFillArticlesWithIds)
 	fmt.Printf("Новые записи вставлены в таблицу articles за %v \n", time.Since(startTime))
 }
