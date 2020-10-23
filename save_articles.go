@@ -10,11 +10,17 @@ import (
 	"os"
 	"time"
 
+	_ "github.com/lib/pq"
+
+	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Ия файла базы данных
-var dbFileName = `rg.db`
+// Ия файла базы данных SQLite
+var dbFileName = "rg.db"
+
+// DSN параметры подсоединения к postgresql
+var DSN = "host=134.0.107.93 port=5432 user=root password=rosgas2011 dbname=rgdb sslmode=disable"
 
 // Конечная точка API для получения текста материала. См. https://works.rg.ru/project/docs/?section=8
 var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-%v.json"
@@ -23,33 +29,36 @@ var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/o
 var requestTimeout = 30
 
 func main() {
+	fmt.Println("BEGIN")
+	// DSN = os.Getenv("RGDSN")
 	// считать параметры командной строки
 	// batchSize Количество одновременных запросов к API.
 	// status Значение поля migration_status, записей подлежащих обновлению.
 	// showTiming Показывать времена исполнения
-	batchSize, status, createTable, showTiming := readCommandLineParams()
+	batchSize, status, showTiming := readCommandLineParams()
+	fmt.Println("batchSize=", batchSize)
+	fmt.Println("status=", status)
 	fmt.Println("showTiming=", showTiming)
-	if createTable {
-		// Порождаем таблицу articles
-		createArticlesTable()
-		// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
-		fillArticlesWithIds()
-	}
+
+	// Порождаем таблицу articles если ее нет
+	createArticlesTable()
+
+	// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
+	// fillArticlesWithIds()
+
 	// Заполняем таблицу articles текстами из API
-	fillArticlesWithTexts(batchSize, status, showTiming)
+	// fillArticlesWithTexts(batchSize, status, showTiming)
 
 	fmt.Println("DONE")
 }
 
 // readCommandLineParams читает параметры командной строки
-func readCommandLineParams() (batchSize int, status string, createTable bool, showTiming bool) {
+func readCommandLineParams() (batchSize int, status string, showTiming bool) {
 	flag.IntVar(&batchSize, "batchSize", 50, "Количество запросов выполняемых одновременно")
 	flag.StringVar(&status, "status", "", "Значение поля migration_status обновляемых записей")
-	flag.BoolVar(&createTable, "createTable", false, "Создать таблицу и заполнить ее идентификаторами.")
 	flag.BoolVar(&showTiming, "showTiming", false, "Показывать времена исполнения")
 
 	flag.Parse()
-	// fmt.Println("\nПример запуска: ./auth-proxy -serve 4400 -env=dev\n ")
 	flag.Usage()
 	if batchSize == 0 {
 		os.Exit(0)
@@ -60,7 +69,7 @@ func readCommandLineParams() (batchSize int, status string, createTable bool, sh
 // Порождает таблицу articles в базе данных
 func createArticlesTable() {
 	sqlCreateArticles := `
-	CREATE TABLE IF NOT EXISTS articles(
+	CREATE TABLE IF NOT EXISTS articles_new(
 		obj_id TEXT PRIMARY KEY,
 		announce TEXT,
 		authors TEXT,
@@ -83,7 +92,7 @@ func createArticlesTable() {
 		migration_status TEXT DEFAULT ''
 	)
 	`
-	sqlCreateIndex := `CREATE INDEX IF NOT EXISTS articles_migration_status_idx ON articles (migration_status)`
+	sqlCreateIndex := `CREATE INDEX IF NOT EXISTS articles_migration_status_idx ON articles_new (migration_status)`
 
 	exec(sqlCreateArticles)
 	fmt.Println("Articles table created")
@@ -344,7 +353,8 @@ func getMapVal(m map[string]interface{}, key string) interface{} {
 
 // Исполняет запрос к базе данных
 func exec(sqlText string) {
-	db, err := sql.Open("sqlite3", dbFileName)
+	// db, err := sql.Open("sqlite3", dbFileName)
+	db, err := sqlx.Open("postgres", DSN)
 	defer db.Close()
 	checkErr(err)
 	stmt, err := db.Prepare(sqlText)

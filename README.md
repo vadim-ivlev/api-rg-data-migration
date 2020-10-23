@@ -153,4 +153,19 @@ https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-7987
 Подготовка директории deploy                | `sh/build-deploy-directory.sh`
 Деплой                                      | `sh/deploy.sh`
 
+
+
+drwxrwxr-x  2 gitupdater gitupdater 4.0K Oct  9 03:54 cvs/
+-rwxrwxr-x  1 gitupdater gitupdater 2.8G Oct 20 15:29 cvs.zip*
+drwxrwxr-x  6 gitupdater gitupdater 4.0K Oct 20 14:42 data-migrations/
+drwxrwxr-x 10 gitupdater gitupdater 4.0K Oct 22 01:59 rg-corpus/
+-rwxrwxr-x  1 gitupdater gitupdater 7.5G Oct 20 03:54 rg-corpus.zip*
+drwxrwxr-x  3 gitupdater gitupdater 4.0K Oct 20 13:02 rg-db/
+-rwxrwxr-x  1 gitupdater gitupdater 4.8G Oct 20 03:14 rg-db.zip*
+drwxrwxr-x  9 gitupdater gitupdater 4.0K Oct 20 17:41 text-processor/
+drwxrwxr-x  9 gitupdater gitupdater 4.0K Oct 13 19:12 text-processor0/
+-rwxrwxr-x  1 gitupdater gitupdater 678K Oct 20 03:52 text-processor.zip*
+
+
+
  -->
