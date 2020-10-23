@@ -20,13 +20,12 @@ def get_connection():
         logging.error(ex)
         return None
     
-def execute1(DSN,sql, *args):
-    records = None
+def execute_and_return(sql, *args):
+    records = []
     err = None    
     start = time.time()
     try:
         con = psycopg2.connect( DSN )
-
         cur = con.cursor()
         cur.execute(sql, *args)
         con.commit()
@@ -35,11 +34,7 @@ def execute1(DSN,sql, *args):
         records = [dict(zip(cols,row)) for row in rows]
 
     except Exception as ex:
-        err = str(ex)
-        print("execute error!!! ",err)
-    else:
-        # print("execute success!!!")
-        pass
+        logging.error(ex)
     finally:
         if "cur" in locals():
             cur.close()
@@ -96,6 +91,32 @@ def executemany_or_by_one(con, sql, arr=[]):
             n += execute(con, sql, e) 
     
     return n
+
+
+
+
+def execute_values(con, sql, data=[], template=None, page_size=100, fetch=False):
+    """
+    this is an example from https://www.psycopg.org/docs/extras.html
+    >>> execute_values(cur,
+    ... "INSERT INTO test (id, v1, v2) VALUES %s",
+    ... [(1, 2, 3), (4, 5, 6), (7, 8, 9)])
+    """
+    result = 0
+    try:
+        cur = con.cursor()
+        psycopg2.extras.execute_values(cur, sql, data, template=template, page_size=page_size, fetch=fetch)
+        con.commit()
+        result = 1
+    except Exception as ex:
+        logging.error(ex)
+    finally:
+        cur.close()
+    return result
+
+
+
+
 
 
 if __name__ == "__main__":

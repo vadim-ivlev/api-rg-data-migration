@@ -5,67 +5,68 @@ import api
 import json
 import os
 import time
+import logging
 
 
 def main():
     "сохраняет связи рубрикатор-объект в базе данных"
 
-    n = create_rubrics_objects_table()
+    ids = _get_rubric_ids()
+    if len(ids)==0:
+        print("Не удалось извлечь идентификаторы рубрик из таблицы rubrics")
+        return False
+    print(f'Из таблицы rubrics извлечено {len(ids)} идентификаторов рурик')
+
+    n = _create_rubrics_objects_table()
     if n==0 :
-        return
+        print("Не удалось создать таблицу rubrics_objects_new")
+        return False
     print("Создана таблица rubrics_objects_new")
 
-    print("Getting rubric ids ...")
-    ids = get_rubric_ids()
+    _save_rubrics_objects_to_db(ids)
 
-    print("Saving rubrics-objects to database...")
-    save_rubrics_objects_to_db(ids)
+    return True
 
-
-def create_rubrics_objects_table():
+def _create_rubrics_objects_table():
     "Порождает таблицу rubrics_objects в базе данных."
     
     # Запрос на порождение таблицы
-    sql_create_rubrics_objects = """
-    DROP TABLE IF EXISTS rubrics_objects_new;
+    sql = """
     DROP INDEX IF EXISTS rubrics_objects_new_kind_idx;
+    DROP TABLE IF EXISTS rubrics_objects_new;
 
     CREATE TABLE IF NOT EXISTS rubrics_objects_new (
         rubric_id TEXT, 
         object_id TEXT,
         datetime TEXT, 
-        kind TEXT,
-        PRIMARY KEY(rubric_id, object_id)
+        kind TEXT
+        -- PRIMARY KEY(rubric_id, object_id)
     );
 
     CREATE INDEX rubrics_objects_new_kind_idx ON rubrics_objects_new (kind);
     """
-    # sql_create_index = "CREATE INDEX rubrics_objects_new_kind_idx ON rubrics_objects_new (kind);"
 
     con = db.get_connection()
-    n = db.execute(con, sql_create_rubrics_objects )
-    # n = db.execute(conn, sql_create_index )
+    n = db.execute(con, sql )
     con.close()
     return n
 
 
-def get_rubric_ids():
+def _get_rubric_ids():
     "Возвращает рубрики"
-    con = db.get_connection()
-    cur = con.cursor()
-    rows = cur.execute("select * from rubrics")  
-    cur.close()
-    ids = [r[0] for r in rows]
-    con.close()
+    ids = []
+    sql = "select id from rubrics"
+    records, err, _ = db.execute_and_return(sql)
+    ids = [r['id'] for r in records]
     return ids
 
 
-def save_rubrics_objects_to_db(ids):
+def _save_rubrics_objects_to_db(ids):
     "Сохраняет таблицу связи рубрикатора с объектами в базу данных"
     
     rubric_counter=0
     object_counter=0
-
+    start = time.time()
     for id in ids:
         t0 = time.time()
         objects = get_rubric_objects(id)
@@ -77,14 +78,19 @@ def save_rubrics_objects_to_db(ids):
             link = (id, o.get('id'), o.get('datetime'), o.get('kind'))
             links.append(link)
 
-        n = save_rubric_object_links(links)
+        n = _save_rubric_object_links(links)
         t2 = time.time()
-        print(f'request/saving time = {t1-t0:.2f}/{t2-t1:.2f}')
-        file_size = os.path.getsize("rg.db")    
+        # file_size = os.path.getsize("rg.db")    
         rubric_counter += 1
         object_counter += len(objects)
-        print(f'#rubric N={rubric_counter} rubric id={id}  New objects ={n}/{len(objects)} total objects={object_counter}  file_size={file_size/(1024*1024)}')
-
+        duration = time.time()-start
+        rate = object_counter / duration
+        print('--------------------------')
+        print(f'#{rubric_counter} rubric_id={id}.  Saved {n} objects out of {len(objects)}.')
+        print(f'request/saving time = {t1-t0:.2f}/{t2-t1:.2f}')
+        print(f'Total {object_counter} objects in {duration:.2f} sec. Average rate = {rate:.2f} obj/sec.')
+    
+    return rubric_counter, object_counter, time.time()-start
 
 def get_rubric_objects(rubric_id):
     """
@@ -98,12 +104,12 @@ def get_rubric_objects(rubric_id):
     return objects
 
 
-def save_rubric_object_links(links=[]):
+def _save_rubric_object_links(links=[]):
     "Сохраняет массив связок (id рубрики - id объекта) в базу данных"
-    conn = sqlite3.connect(db.db_filename)
-    n = db.executemany_or_by_one(conn, "INSERT INTO rubrics_objects VALUES (?,?,?,?)", links)
-    conn.close()
-    print(f'{n} out of {len(links)} rubric-object links saved to database.')
+    con = db.get_connection()
+    # n = db.executemany_or_by_one(con, "INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES (%s,%s,%s,%s)", links)
+    n = db.execute_values(con, "INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES %s", links, page_size=1000)
+    con.close()
     return n
 
 
