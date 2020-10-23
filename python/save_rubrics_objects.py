@@ -23,18 +23,28 @@ def main():
         return False
     print("Создана таблица rubrics_objects_new")
 
-    _save_rubrics_objects_to_db(ids)
+    start = time.time()
+    n = _save_rubrics_objects_to_db(ids)
+    if n==0:
+        print("Не удалось добавить записи в таблицу rubrics_objects_new")
+        return False            
+    print(f'{n} записей добавлены в таблицу rubrics_objects_new за {(time.time()-start)/60:.2f} минут.')
+
+    n = _replace_rubrics_objects_table()
+    if n==0:
+        print("Не удалось переименовать таблицу rubrics_objects_new")
+        return False        
+    print("Таблица rubrics_objects_new переименована в rubrics_objects.")
 
     return True
+
 
 def _create_rubrics_objects_table():
     "Порождает таблицу rubrics_objects в базе данных."
     
     # Запрос на порождение таблицы
     sql = """
-    DROP INDEX IF EXISTS rubrics_objects_new_kind_idx;
     DROP TABLE IF EXISTS rubrics_objects_new;
-
     CREATE TABLE IF NOT EXISTS rubrics_objects_new (
         rubric_id TEXT, 
         object_id TEXT,
@@ -42,8 +52,6 @@ def _create_rubrics_objects_table():
         kind TEXT
         -- PRIMARY KEY(rubric_id, object_id)
     );
-
-    CREATE INDEX rubrics_objects_new_kind_idx ON rubrics_objects_new (kind);
     """
 
     con = db.get_connection()
@@ -61,7 +69,7 @@ def _get_rubric_ids():
     return ids
 
 
-def _save_rubrics_objects_to_db(ids):
+def _save_rubrics_objects_to_db(ids):    
     "Сохраняет таблицу связи рубрикатора с объектами в базу данных"
     
     rubric_counter=0
@@ -69,7 +77,7 @@ def _save_rubrics_objects_to_db(ids):
     start = time.time()
     for id in ids:
         t0 = time.time()
-        objects = get_rubric_objects(id)
+        objects = _get_rubric_objects(id)
         t1 = time.time()
         # Массив для хранения связей рубрика-объект
         links =[]
@@ -80,19 +88,18 @@ def _save_rubrics_objects_to_db(ids):
 
         n = _save_rubric_object_links(links)
         t2 = time.time()
-        # file_size = os.path.getsize("rg.db")    
         rubric_counter += 1
         object_counter += len(objects)
         duration = time.time()-start
         rate = object_counter / duration
         print('--------------------------')
-        print(f'#{rubric_counter} rubric_id={id}.  Saved {n} objects out of {len(objects)}.')
-        print(f'request/saving time = {t1-t0:.2f}/{t2-t1:.2f}')
-        print(f'Total {object_counter} objects in {duration:.2f} sec. Average rate = {rate:.2f} obj/sec.')
+        print(f'#{rubric_counter:<5} rubric_id={id:6} {len(objects):8} объектов. Успех={n}. Время загрузка/сохранение = {t1-t0:.2f}/{t2-t1:.2f}')
+        print(f'Всего {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     
-    return rubric_counter, object_counter, time.time()-start
+    return object_counter
 
-def get_rubric_objects(rubric_id):
+
+def _get_rubric_objects(rubric_id):
     """
     Получить объекты связанные с рубрикой
     """
@@ -109,6 +116,20 @@ def _save_rubric_object_links(links=[]):
     con = db.get_connection()
     # n = db.executemany_or_by_one(con, "INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES (%s,%s,%s,%s)", links)
     n = db.execute_values(con, "INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES %s", links, page_size=1000)
+    con.close()
+    return n
+
+
+def _replace_rubrics_objects_table():
+    "Замещает таблицу rubrics_objects таблицей rubrics_objects_new"
+
+    sql = """
+    DROP TABLE IF EXISTS rubrics_objects;
+    ALTER TABLE rubrics_objects_new RENAME TO rubrics_objects;
+    -- CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects(kind);
+    """
+    con = db.get_connection()
+    n =  db.execute(con, sql )
     con.close()
     return n
 

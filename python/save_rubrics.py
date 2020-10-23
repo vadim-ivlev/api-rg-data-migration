@@ -107,8 +107,9 @@ def _save_rubrics_to_database(rubrics):
     "Сохраняет рубрики в базу данных"
 
     con = db.get_connection()
-    sql = "INSERT INTO rubrics_new(id,parent_id,title,uri) VALUES (%s,%s,%s,%s)"
-    n = db.executemany_or_by_one(con, sql, rubrics)
+    # n = db.executemany_or_by_one(con, "INSERT INTO rubrics_new(id,parent_id,title,uri) VALUES (%s,%s,%s,%s)", rubrics)
+    n = db.execute_values(con, "INSERT INTO rubrics_new(id,parent_id,title,uri) VALUES  %s", rubrics, page_size=2000)
+
     con.close()
     return n
 
