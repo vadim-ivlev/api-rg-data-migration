@@ -73,35 +73,35 @@ func createArticlesTable() {
 	-- DROP TABLE IF EXISTS articles_new;
 
 	CREATE TABLE IF NOT EXISTS articles_new (
-		obj_id text PRIMARY KEY,
-		announce text NULL,
-		authors text NULL,
-		date_modified text NULL,
-		"full-text" text NULL,
-		images text NULL,
-		index_priority text NULL,
-		is_active text NULL,
-		is_announce text NULL,
-		is_paid text NULL,
-		link_title text NULL,
-		links text NULL,
-		obj_kind text NULL,
-		projects text NULL,
-		release_date text NULL,
-		spiegel text NULL,
-		title text NULL,
-		uannounce text NULL,
-		url text NULL,
+		obj_id           text PRIMARY KEY,
+		announce         text NULL,
+		authors          text NULL,
+		date_modified    text NULL,
+		"full-text"      text NULL,
+		images           text NULL,
+		index_priority   text NULL,
+		is_active        text NULL,
+		is_announce      text NULL,
+		is_paid          text NULL,
+		link_title       text NULL,
+		links            text NULL,
+		obj_kind         text NULL,
+		projects         text NULL,
+		release_date     text NULL,
+		spiegel          text NULL,
+		title            text NULL,
+		uannounce        text NULL,
+		url              text NULL,
 		migration_status text NULL DEFAULT ''::text,
-		process_status text NULL,
-		elastic_status text NULL,
-		lemmatized_text text NULL,
-		entities_text text NULL,
+		process_status   text NULL,
+		elastic_status   text NULL,
+		lemmatized_text  text NULL,
+		entities_text    text NULL,
 		entities_grouped text NULL
 	);
 	CREATE INDEX IF NOT EXISTS articles_migration_status__idx ON articles_new (migration_status);
-	CREATE INDEX IF NOT EXISTS articles_process_status__idx ON articles_new (process_status);
-	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx ON articles_new (elastic_status);
+	CREATE INDEX IF NOT EXISTS articles_process_status__idx   ON articles_new (process_status);
+	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx   ON articles_new (elastic_status);
 	`
 	mustExec(sqlCreateArticles)
 	fmt.Println("Таблица articles создана.")

@@ -1,3 +1,5 @@
+import os
+import sys
 import time
 import save_rubrics
 import save_rubrics_objects
@@ -22,7 +24,10 @@ while True:
         time.sleep(sleep_time)
         continue
     
-    # Обновляем таблицу статей
+    # Обновляем таблицу статей с помощью вызова go программы.
+    path = sys.path[0]
+    os.system(path+'/save_articles')
 
     print(f'Ждем {sleep_time/60:.0f} минут после обновления № {counter} ...')
+    print('----------------------------------\n')
     time.sleep(sleep_time)

@@ -2,13 +2,13 @@ version: '3'
 
 services:
 
-    cont:
-        image: "alpine"
-        # user: "5000:5000"
-        working_dir: /app/go
-        volumes:
-            - .:/app
-        # command: "./api-rg-data-migration"
+    # cont:
+    #     image: "alpine"
+    #     # user: "5000:5000"
+    #     working_dir: /app/go
+    #     volumes:
+    #         - .:/app
+    #     # command: "./api-rg-data-migration"
     
 
     api-rg-data-migration-prod:
