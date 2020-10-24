@@ -1,4 +1,4 @@
 #!/bin/bash
 
-echo "гасим" 
+echo "гасим приложение" 
 docker-compose down

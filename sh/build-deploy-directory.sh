@@ -1,11 +1,12 @@
 #!/bin/bash
 
-rm -rf deploy/logs
-rm -rf deploy/configs
-rm -rf deploy/www
+echo "наполняем директорию deploy"
+# rm -rf deploy
+
+rm -rf deploy/python
+rm -rf deploy/Dockerfile
 rm -rf deploy/docker-compose.yml
 
-cp -R logs deploy/
-cp -R configs deploy/
-cp -R www deploy/
+cp -R python deploy/
+cp -R Dockerfile deploy/
 cp -R docker-compose.yml deploy/

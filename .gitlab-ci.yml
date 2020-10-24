@@ -3,6 +3,7 @@ image: golang:1.14.2
 variables:
     IMAGE_NAME: api-rg-data-migration-prod
     BUILD_PATH: /builds/masterback/api-rg-data-migration
+    TARGET_SERVER: gitupdater@dockerweb.rgwork.ru
 
 stages:
     - deploy&copy
@@ -14,15 +15,16 @@ stages:
 deploy&copy:
     stage: deploy&copy
     script:
+        - ./sh/build-executable.sh  
         - ./sh/build-deploy-directory.sh  
         - ./.import-ssh-key.sh "$PROD_RSA_PRIVATE_KEY"
         # remove old dir on the server
-        - ssh gitupdater@dockerweb.rgwork.ru 'rm -rf /home/gitupdater/'$IMAGE_NAME
+        - ssh $TARGET_SERVER 'rm -rf /home/gitupdater/'$IMAGE_NAME
         # copy new dir on server
-        - scp -pr $BUILD_PATH/deploy gitupdater@dockerweb.rgwork.ru:/home/gitupdater/$IMAGE_NAME
-        # - rsync -av $BUILD_PATH/deploy gitupdater@dockerweb.rgwork.ru:/home/gitupdater/$IMAGE_NAME
+        - scp -pr $BUILD_PATH/deploy $TARGET_SERVER:/home/gitupdater/$IMAGE_NAME
+        # - rsync -av $BUILD_PATH/deploy $TARGET_SERVER:/home/gitupdater/$IMAGE_NAME
         # change rights to filebeat (permition denied)
-        # - ssh gitupdater@dockerweb.rgwork.ru 'chown root /home/gitupdater/'$IMAGE_NAME/configs/filebeat.yml
+        # - ssh $TARGET_SERVER 'chown root /home/gitupdater/'$IMAGE_NAME/configs/filebeat.yml
 
     only:
         - production
@@ -35,7 +37,7 @@ deploy&compose:
     script:
         - ./.import-ssh-key.sh "$DEPLOY_RSA_PRIVATE_KEY"
         # !!! start real deploy and docker-compose
-        - ssh gitupdater@dockerweb.rgwork.ru $IMAGE_NAME
+        - ssh $TARGET_SERVER $IMAGE_NAME
     only:
         - production
 

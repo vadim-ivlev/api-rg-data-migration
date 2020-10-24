@@ -1,28 +1,18 @@
 version: '3'
 
 services:
-
-    # cont:
-    #     image: "alpine"
-    #     # user: "5000:5000"
-    #     working_dir: /app/go
-    #     volumes:
-    #         - .:/app
-    #     # command: "./api-rg-data-migration"
     
-
     api-rg-data-migration-prod:
         image: api-rg-data-migration-prod
         build: 
             context: .
-            dockerfile: Dockerfile-python
+            dockerfile: Dockerfile
         container_name: api-rg-data-migration-prod
         restart: unless-stopped
         volumes:
             - ./python:/usr/src/app
 
         environment: 
-            - RGPASS=${PGPASSWORD}
             - RGDSN=host=134.0.107.93 port=5432 dbname=rgdb user=root password=rosgas2011
         # command: python -u main.py
         command: sleep 5000

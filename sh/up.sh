@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-echo "поднимаем" 
+echo "поднимаем приложение" 
 docker-compose up -d --build
 
 echo "поясняем"
