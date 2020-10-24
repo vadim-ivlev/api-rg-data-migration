@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -14,7 +13,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
+	// _ "github.com/mattn/go-sqlite3"
 )
 
 // Ия файла базы данных SQLite
@@ -48,7 +47,7 @@ func main() {
 	fillArticlesWithIds()
 
 	// Заполняем таблицу articles текстами из API
-	// fillArticlesWithTexts(batchSize, status, showTiming)
+	fillArticlesWithTexts(batchSize, status, showTiming)
 
 	fmt.Println("DONE")
 }
@@ -142,6 +141,7 @@ func fillArticlesWithTexts(batchSize int, status string, showTiming bool) {
 
 	//Берем первую порцию идентификаторов из таблицы articles
 	ids := getArticleIds(batchSize, status, showTiming)
+
 	// Пока в порции в порции есть идентификаторы
 	for len(ids) > 0 {
 		//Запрашиваем тексты статей
@@ -170,18 +170,26 @@ func fillArticlesWithTexts(batchSize int, status string, showTiming bool) {
 // в которых поле migration_status имеет значение статус.
 func getArticleIds(limit int, status string, showTiming bool) []string {
 	startTime := time.Now()
-	db, err := sql.Open("sqlite3", dbFileName)
+	// db, err := sql.Open("sqlite3", dbFileName)
+	db, err := sqlx.Open("postgres", DSN)
 	checkErr(err)
-	rows, err := db.Query(fmt.Sprintf("SELECT obj_id FROM articles WHERE migration_status = '%s' LIMIT %d", status, limit))
-	checkErr(err)
-	var id string
+
 	ids := make([]string, 0)
-	for rows.Next() {
-		err = rows.Scan(&id)
-		checkErr(err)
-		ids = append(ids, id)
-	}
-	rows.Close() //good habit to close
+
+	err = db.Select(&ids, fmt.Sprintf("SELECT obj_id FROM articles_new WHERE migration_status = '%s' LIMIT %d", status, limit))
+	checkErr(err)
+
+	// закомментированный код работает тоже в том числе для sqllite3
+	// rows, err := db.Query(fmt.Sprintf("SELECT obj_id FROM articles_new WHERE migration_status = '%s' LIMIT %d", status, limit))
+	// checkErr(err)
+	// var id string
+	// for rows.Next() {
+	// 	err = rows.Scan(&id)
+	// 	checkErr(err)
+	// 	ids = append(ids, id)
+	// }
+	// rows.Close() //good habit to close
+
 	err = db.Close()
 	checkErr(err)
 	if showTiming {
@@ -313,29 +321,30 @@ func saveArticlesToDatabase(records []map[string]interface{}, showTiming bool) {
 	}
 
 	sqlUpdate := `
-		UPDATE articles
+		UPDATE articles_new
 		SET 
-			announce=? ,
-			authors=? ,
-			date_modified=? , 
-			"full-text"=? ,
-			images=? ,
-			index_priority=? ,
-			is_active=? ,
-			is_announce=? ,
-			is_paid=? ,
-			link_title=? ,
-			links=? , 
-			obj_kind=? ,
-			projects=? ,
-			release_date=? ,
-			spiegel=? ,
-			title=? ,
-			uannounce=? ,
-			url=? ,
-			migration_status=? 
+			announce = 			$1,
+			authors = 			$2,
+			date_modified = 	$3, 
+			"full-text" = 		$4,
+			images = 			$5,
+			index_priority = 	$6,
+			is_active = 		$7,
+			is_announce = 		$8,
+			is_paid = 			$9,
+			link_title = 		$10,
+			links = 			$11, 
+			obj_kind = 			$12,
+			projects = 			$13,
+			release_date = 		$14,
+			spiegel = 			$15,
+			title = 			$16,
+			uannounce = 		$17,
+			url = 				$18,
+			migration_status = 	$19 
 		WHERE 
-			obj_id=?
+			obj_id = 			$20
+		
 	`
 	execMany(sqlUpdate, paramsArray)
 	if showTiming {
@@ -360,7 +369,7 @@ func getMapVal(m map[string]interface{}, key string) interface{} {
 	if err == nil {
 		s = string(b)
 	}
-	return s
+	return "something bad"
 }
 
 // Исполняет запрос к базе данных
@@ -378,6 +387,7 @@ func exec(sqlText string) {
 
 func mustExec(sqlText string) {
 	db, err := sqlx.Open("postgres", DSN)
+	fmt.Println(DSN)
 	defer db.Close()
 	if err != nil {
 		log.Fatalln(err)
@@ -388,13 +398,15 @@ func mustExec(sqlText string) {
 // Исполняет несколько параметризованных запросов на обновление или вставку.
 // Если запрос не прошел, печатает сообщение.
 func execMany(sqlText string, paramsArray [][]interface{}) {
-	db, err := sql.Open("sqlite3", dbFileName)
+	// db, err := sql.Open("sqlite3", dbFileName)
+	db, err := sqlx.Open("postgres", DSN)
 	// defer db.Close()
 	checkErr(err)
 	stmt, err := db.Prepare(sqlText)
 	checkErr(err)
 
 	for _, params := range paramsArray {
+		// fmt.Println("params length================", len(params))
 		res, err := stmt.Exec(params...)
 		checkErr(err)
 		// Если запрос не затронул ни одну запись, выводим сообщение.

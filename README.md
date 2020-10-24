@@ -166,6 +166,6 @@ drwxrwxr-x  9 gitupdater gitupdater 4.0K Oct 20 17:41 text-processor/
 drwxrwxr-x  9 gitupdater gitupdater 4.0K Oct 13 19:12 text-processor0/
 -rwxrwxr-x  1 gitupdater gitupdater 678K Oct 20 03:52 text-processor.zip*
 
-
+ALTER TABLE <table> ALTER COLUMN <column> DROP DEFAULT;
 
  -->
