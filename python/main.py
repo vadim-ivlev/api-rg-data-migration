@@ -5,7 +5,7 @@ import save_rubrics
 import save_rubrics_objects
 
 # время между попытками обновления таблиц
-sleep_time = 60 * 10
+sleep_time = 60 * 5
 # счетчик попыток
 counter =0
 

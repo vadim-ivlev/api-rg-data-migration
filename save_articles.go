@@ -67,9 +67,7 @@ func readCommandLineParams() (batchSize int, showTiming bool) {
 func createArticlesTable() {
 	sqlCreateArticles := `
 	
-	DROP TABLE IF EXISTS articles_new;
-
-	CREATE TABLE IF NOT EXISTS articles_new (
+	CREATE TABLE IF NOT EXISTS articles (
 		obj_id           text PRIMARY KEY,
 		announce         text NULL,
 		authors          text NULL,
@@ -96,9 +94,9 @@ func createArticlesTable() {
 		entities_text    text NULL,
 		entities_grouped text NULL
 	);
-	CREATE INDEX IF NOT EXISTS articles_new_migration_status__idx ON articles_new (migration_status);
-	CREATE INDEX IF NOT EXISTS articles_new_process_status__idx   ON articles_new (process_status);
-	CREATE INDEX IF NOT EXISTS articles_new_elastic_status__idx   ON articles_new (elastic_status);
+	CREATE INDEX IF NOT EXISTS articles_migration_status__idx ON articles (migration_status);
+	CREATE INDEX IF NOT EXISTS articles_process_status__idx   ON articles (process_status);
+	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx   ON articles (elastic_status);
 	`
 	mustExec(sqlCreateArticles)
 	fmt.Println("Таблица articles создана.")
@@ -109,7 +107,7 @@ func createArticlesTable() {
 func fillArticlesWithIds() {
 	startTime := time.Now()
 	sqlFillArticlesWithIds := `
-	INSERT INTO articles_new(obj_id)
+	INSERT INTO articles(obj_id)
 
 		SELECT DISTINCT rubrics_objects.object_id
 		FROM rubrics_objects LEFT JOIN articles ON rubrics_objects.object_id = articles.obj_id 
@@ -169,7 +167,7 @@ func getNewRecordsNumber() int {
 	db, err := sqlx.Open("postgres", DSN)
 	checkErr(err)
 	ids := make([]int, 0)
-	err = db.Select(&ids, "SELECT count(obj_id) FROM articles_new WHERE migration_status IS NULL")
+	err = db.Select(&ids, "SELECT count(obj_id) FROM articles WHERE migration_status IS NULL")
 	checkErr(err)
 	err = db.Close()
 	checkErr(err)
@@ -186,11 +184,11 @@ func getArticleIds(limit int, showTiming bool) []string {
 
 	ids := make([]string, 0)
 
-	err = db.Select(&ids, fmt.Sprintf("SELECT obj_id FROM articles_new WHERE migration_status IS NULL LIMIT %d", limit))
+	err = db.Select(&ids, fmt.Sprintf("SELECT obj_id FROM articles WHERE migration_status IS NULL LIMIT %d", limit))
 	checkErr(err)
 
 	// закомментированный код работает тоже в том числе для sqllite3
-	// rows, err := db.Query(fmt.Sprintf("SELECT obj_id FROM articles_new WHERE migration_status = '%s' LIMIT %d", status, limit))
+	// rows, err := db.Query(fmt.Sprintf("SELECT obj_id FROM articles WHERE migration_status = '%s' LIMIT %d", status, limit))
 	// checkErr(err)
 	// var id string
 	// for rows.Next() {
@@ -331,7 +329,7 @@ func saveArticlesToDatabase(records []map[string]interface{}, showTiming bool) {
 	}
 
 	sqlUpdate := `
-		UPDATE articles_new
+		UPDATE articles
 		SET 
 			announce = 			$1,
 			authors = 			$2,
