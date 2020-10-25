@@ -13,7 +13,7 @@ services:
             - ./python:/usr/src/app
 
         environment: 
-            - RGDSN=host=134.0.107.93 port=5432 dbname=rgdb user=root password=rosgas2011
+            - RGDSN=${RGDSN}
         # command: python -u main.py
         command: sleep 5000
 

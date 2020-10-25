@@ -8,7 +8,6 @@ import os
 # Имя файла базы данных
 db_filename = 'rg.db'
 
-# DSN = "host=134.0.107.93 port=5432 dbname=rgdb user=root password=rosgas2011"
 DSN = os.getenv('RGDSN')
 
 def get_connection():

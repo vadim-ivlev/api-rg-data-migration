@@ -1,4 +1,8 @@
-- change articles_new to articles in go code.
+- run in docker
+- move pgdata on dtest to another location
+- deploy to dtest
+
+- done. change articles_new to articles in go code.
 
 - done. change index names on articles on ilmira.local and dockertest.rgwork.ru
   
