@@ -82,7 +82,6 @@ def _save_rubrics_objects_to_db(ids):
         # Массив для хранения связей рубрика-объект
         links =[]
         for o in objects:
-            # save_rubric_object(id, o.get('id'), o.get('datetime'), o.get('kind'))
             link = (id, o.get('id'), o.get('datetime'), o.get('kind'))
             links.append(link)
 
@@ -92,9 +91,9 @@ def _save_rubrics_objects_to_db(ids):
         object_counter += len(objects)
         duration = time.time()-start
         rate = object_counter / duration
-        print('--------------------------')
-        print(f'#{rubric_counter:<5} rubric_id={id:6} {len(objects):8} объектов. Успех={n}. Время загрузка/сохранение = {t1-t0:.2f}/{t2-t1:.2f}')
-        print(f'Всего {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
+        print('Таблица rubrics_objects ---------------------------------------')
+        print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
+        print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     
     return object_counter
 

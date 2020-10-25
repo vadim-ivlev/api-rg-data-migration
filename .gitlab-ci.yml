@@ -3,7 +3,7 @@ image: golang:1.14.2
 variables:
     IMAGE_NAME: api-rg-data-migration-prod
     BUILD_PATH: /builds/masterback/api-rg-data-migration
-    TARGET_SERVER: gitupdater@dockerweb.rgwork.ru
+    TARGET_SERVER: gitupdater@dockertest.rgwork.ru
 
 stages:
     - deploy&copy

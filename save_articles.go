@@ -29,16 +29,10 @@ var urlArticle = "https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/o
 var requestTimeout = 30
 
 func main() {
-	fmt.Println("BEGIN")
-	// DSN = os.Getenv("RGDSN")
 	// считать параметры командной строки
 	// batchSize Количество одновременных запросов к API.
-	// status Значение поля migration_status, записей подлежащих обновлению.
 	// showTiming Показывать времена исполнения
-	batchSize, status, showTiming := readCommandLineParams()
-	fmt.Println("batchSize=", batchSize)
-	fmt.Println("status=", status)
-	fmt.Println("showTiming=", showTiming)
+	batchSize, showTiming := readCommandLineParams()
 
 	// Порождаем таблицу articles если ее нет
 	createArticlesTable()
@@ -46,20 +40,23 @@ func main() {
 	// Заполняем ее пустыми записями с идентификаторами из таблицы связей rubrics_articles
 	fillArticlesWithIds()
 
+	// Считаем количество новых записей в articles
+	n := getNewRecordsNumber()
+	fmt.Printf("Количество новых записей в таблице articles = %d.\n", n)
 	// Заполняем таблицу articles текстами из API
-	fillArticlesWithTexts(batchSize, status, showTiming)
+	fillArticlesWithTexts(n, batchSize, showTiming)
 
 	fmt.Println("DONE")
 }
 
 // readCommandLineParams читает параметры командной строки
-func readCommandLineParams() (batchSize int, status string, showTiming bool) {
+func readCommandLineParams() (batchSize int, showTiming bool) {
 	flag.IntVar(&batchSize, "batchSize", 50, "Количество запросов выполняемых одновременно")
-	flag.StringVar(&status, "status", "", "Значение поля migration_status обновляемых записей")
+	// flag.StringVar(&status, "status", "", "Значение поля migration_status обновляемых записей")
 	flag.BoolVar(&showTiming, "showTiming", false, "Показывать времена исполнения")
 
 	flag.Parse()
-	flag.Usage()
+	// flag.Usage()
 	if batchSize == 0 {
 		os.Exit(0)
 	}
@@ -70,7 +67,7 @@ func readCommandLineParams() (batchSize int, status string, showTiming bool) {
 func createArticlesTable() {
 	sqlCreateArticles := `
 	
-	-- DROP TABLE IF EXISTS articles_new;
+	DROP TABLE IF EXISTS articles_new;
 
 	CREATE TABLE IF NOT EXISTS articles_new (
 		obj_id           text PRIMARY KEY,
@@ -92,16 +89,16 @@ func createArticlesTable() {
 		title            text NULL,
 		uannounce        text NULL,
 		url              text NULL,
-		migration_status text NULL DEFAULT ''::text,
+		migration_status text NULL, -- DEFAULT ''::text,
 		process_status   text NULL,
 		elastic_status   text NULL,
 		lemmatized_text  text NULL,
 		entities_text    text NULL,
 		entities_grouped text NULL
 	);
-	CREATE INDEX IF NOT EXISTS articles_migration_status__idx ON articles_new (migration_status);
-	CREATE INDEX IF NOT EXISTS articles_process_status__idx   ON articles_new (process_status);
-	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx   ON articles_new (elastic_status);
+	CREATE INDEX IF NOT EXISTS articles_new_migration_status__idx ON articles_new (migration_status);
+	CREATE INDEX IF NOT EXISTS articles_new_process_status__idx   ON articles_new (process_status);
+	CREATE INDEX IF NOT EXISTS articles_new_elastic_status__idx   ON articles_new (elastic_status);
 	`
 	mustExec(sqlCreateArticles)
 	fmt.Println("Таблица articles создана.")
@@ -128,10 +125,10 @@ func fillArticlesWithIds() {
 }
 
 // Заполняет таблицу articles текстами из API.
-// batchSize Количество одновременных запросов к API.
-// status Значение поля migration_status, записей подлежащих обновлению.
-// showTiming Показывать времена исполнения
-func fillArticlesWithTexts(batchSize int, status string, showTiming bool) {
+// - n - полное количество новых записей. For info only.
+// - batchSize - Количество одновременных запросов к API.
+// - showTiming - Показывать времена исполнения
+func fillArticlesWithTexts(n, batchSize int, showTiming bool) {
 	// время отдыха между порциями запросов
 	var sleepTime = 50 * time.Millisecond
 	// Счетчик сделанных запросов
@@ -140,7 +137,7 @@ func fillArticlesWithTexts(batchSize int, status string, showTiming bool) {
 	startTime := time.Now()
 
 	//Берем первую порцию идентификаторов из таблицы articles
-	ids := getArticleIds(batchSize, status, showTiming)
+	ids := getArticleIds(batchSize, showTiming)
 
 	// Пока в порции в порции есть идентификаторы
 	for len(ids) > 0 {
@@ -156,19 +153,32 @@ func fillArticlesWithTexts(batchSize int, status string, showTiming bool) {
 		duration := time.Since(startTime)
 		durationHours := float64(duration) / float64(time.Hour)
 		articlesPerHour := float64(counter) / durationHours
-		fmt.Printf("Migrated total %8d articles in %v. Average migration rate = %.0f per hour. \n", counter, duration, articlesPerHour)
+		fmt.Printf("Таблица articles. Загружено %8d/%d статей  за %14v.   Средняя скорость %.0f статей/час. \n", counter, n, duration, articlesPerHour)
 
 		// отдыхаем
 		time.Sleep(sleepTime)
 		// Берем следующую порцию идентификаторов
-		ids = getArticleIds(batchSize, status, showTiming)
+		ids = getArticleIds(batchSize, showTiming)
 	}
 
 }
 
+// Получает количество новых записей в таблице articles,
+// где поле migration_status имеет значение NULL.
+func getNewRecordsNumber() int {
+	db, err := sqlx.Open("postgres", DSN)
+	checkErr(err)
+	ids := make([]int, 0)
+	err = db.Select(&ids, "SELECT count(obj_id) FROM articles_new WHERE migration_status IS NULL")
+	checkErr(err)
+	err = db.Close()
+	checkErr(err)
+	return ids[0]
+}
+
 // Получает массив идентификаторов (размером не более limit) статей из базы данных,
-// в которых поле migration_status имеет значение статус.
-func getArticleIds(limit int, status string, showTiming bool) []string {
+// в которых поле migration_status имеет значение NULL.
+func getArticleIds(limit int, showTiming bool) []string {
 	startTime := time.Now()
 	// db, err := sql.Open("sqlite3", dbFileName)
 	db, err := sqlx.Open("postgres", DSN)
@@ -176,7 +186,7 @@ func getArticleIds(limit int, status string, showTiming bool) []string {
 
 	ids := make([]string, 0)
 
-	err = db.Select(&ids, fmt.Sprintf("SELECT obj_id FROM articles_new WHERE migration_status = '%s' LIMIT %d", status, limit))
+	err = db.Select(&ids, fmt.Sprintf("SELECT obj_id FROM articles_new WHERE migration_status IS NULL LIMIT %d", limit))
 	checkErr(err)
 
 	// закомментированный код работает тоже в том числе для sqllite3
@@ -367,12 +377,12 @@ func getMapVal(m map[string]interface{}, key string) interface{} {
 
 	b, err := json.Marshal(v)
 	if err == nil {
-		s = string(b)
+		return string(b)
 	}
 	return "something bad"
 }
 
-// Исполняет запрос к базе данных
+// Исполняет запрос к базе данных. For all kinds of databases.
 func exec(sqlText string) {
 	// db, err := sql.Open("sqlite3", dbFileName)
 	db, err := sqlx.Open("postgres", DSN)
@@ -385,9 +395,9 @@ func exec(sqlText string) {
 	checkErr(err)
 }
 
+// Исполняет запрос к базе данных. Specific to postgresql.
 func mustExec(sqlText string) {
 	db, err := sqlx.Open("postgres", DSN)
-	fmt.Println(DSN)
 	defer db.Close()
 	if err != nil {
 		log.Fatalln(err)
