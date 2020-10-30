@@ -118,6 +118,7 @@ Kamil Ocean, [17.08.20 16:27]
 - Можно еще так https://rg.ru/include/tmpl-b-feed/is-announce/num-1000/index.json
 
 
+
 Проксирование, для доступа из дома
 
 https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-798781.xml
