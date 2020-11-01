@@ -15,26 +15,28 @@ def main():
     if len(ids)==0:
         print("Не удалось извлечь идентификаторы рубрик из таблицы rubrics")
         return False
-    print(f'Из таблицы rubrics извлечено {len(ids)} идентификаторов рурик')
+    # print(f'Из таблицы rubrics извлечено {len(ids)} идентификаторов рурик')
 
     n = _create_rubrics_objects_table()
     if n==0 :
         print("Не удалось создать таблицу rubrics_objects_new")
         return False
-    print("Создана таблица rubrics_objects_new")
+    # print("Создана таблица rubrics_objects_new")
 
-    start = time.time()
+    
     n = _save_rubrics_objects_to_db(ids)
     if n==0:
         print("Не удалось добавить записи в таблицу rubrics_objects_new")
         return False            
-    print(f'{n} записей добавлены в таблицу rubrics_objects_new за {(time.time()-start)/60:.2f} минут.')
+    # print(f'{n} записей добавлены в таблицу rubrics_objects_new за {(time.time()-start)/60:.2f} минут.')
 
     n = _replace_rubrics_objects_table()
     if n==0:
         print("Не удалось переименовать таблицу rubrics_objects_new")
         return False        
-    print("Таблица rubrics_objects_new переименована в rubrics_objects.")
+    # print("Таблица rubrics_objects_new переименована в rubrics_objects.")
+    # duration = time.time()-start
+    # print(f'Создана c {n} записей за {duration/60:.2f} минут. Средняя скорость {n/duration:.2f} объектов/секунду.')
 
     return True
 
@@ -71,6 +73,8 @@ def _get_rubric_ids():
 
 def _save_rubrics_objects_to_db(ids):    
     "Сохраняет таблицу связи рубрикатора с объектами в базу данных"
+
+    print("rubrics_objects. Считывание объектов рубрик ... ")
     
     rubric_counter=0
     object_counter=0
@@ -91,10 +95,12 @@ def _save_rubrics_objects_to_db(ids):
         object_counter += len(objects)
         duration = time.time()-start
         rate = object_counter / duration
-        print('Таблица rubrics_objects ---------------------------------------')
-        print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
-        print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
+    #    print('Таблица rubrics_objects ---------------------------------------')
+    #    print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
+    #    print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     
+    # print('Таблица rubrics_objects ---------------------------------------')
+    print(f' Cохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     return object_counter
 
 

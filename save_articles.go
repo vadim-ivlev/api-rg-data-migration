@@ -99,7 +99,7 @@ func createArticlesTable() {
 	CREATE INDEX IF NOT EXISTS articles_elastic_status__idx   ON articles (elastic_status);
 	`
 	mustExec(sqlCreateArticles)
-	fmt.Println("Таблица articles создана.")
+	fmt.Println("Таблица articles создана. Вставка новых записей ...")
 }
 
 // Заполняет таблицу articles идентификаторами статей полученными

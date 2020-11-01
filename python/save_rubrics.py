@@ -11,23 +11,23 @@ def main() -> bool:
     start = time.time()
     rubrics_json = api.get_text_from_url(api.url_json)
     if rubrics_json == '' or rubrics_json is None:
-        print("Не смог прочитать API")
+        print("Не удалось прочитать API: {api.url_json} ")
         return False    
-    print(f'Рубрики загружены из API за {time.time()-start:.2f} sec')
+    # print(f'Рубрики загружены из API за {time.time()-start:.2f} sec')
 
 
     rubrics = _make_rubrics_list(rubrics_json)
     if len(rubrics) == 0:
-        print("Список рубрик пуст")
+        print("Список рубрик в API {api.url_json} пуст")
         return False        
-    print(f'Создан список из  {len(rubrics)} рубрик')
+    # print(f'Создан список из  {len(rubrics)} рубрик')
     
 
     n = _create_rubrics_table()
     if n==0:
         print("Не удалось создать таблицу rubrics_new")
         return False        
-    print("Созданы таблица rubrics_new")
+    # print("Созданы таблица rubrics_new")
 
 
     start = time.time()
@@ -35,14 +35,14 @@ def main() -> bool:
     if n==0:
         print("Не удалось добавить рубрики в таблицу rubrics_new")
         return False            
-    print(f'{n} из {len(rubrics)} рубрик добавлены в БД за {time.time()-start:.2f} sec.')
+    # print(f'{len(rubrics)} рубрик добавлены в в таблицу rubrics_new за {time.time()-start:.2f} sec.')
 
 
     n = _replace_rubrics_table()
     if n==0:
         print("Не удалось переименовать таблицу rubrics_new")
         return False        
-    print("Таблица rubrics_new переименована.")
+    print(f'Таблица rubrics создана с {len(rubrics)} записей за {time.time()-start:.2f} sec.')
 
     return True
 
