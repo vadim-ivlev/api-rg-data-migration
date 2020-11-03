@@ -15,7 +15,8 @@ rubricator.xml
 rubricator.json
 objects.json
 
-__pycache__
+# __pycache__/*.pyc
+*.pyc
 .ropeproject
 *.db
 *.db-journal
@@ -23,6 +24,7 @@ __pycache__
 run*
 api-rg-data-migration
 save_articles
+
 
 
 

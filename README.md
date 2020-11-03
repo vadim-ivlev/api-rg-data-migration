@@ -1,83 +1,66 @@
-# api-data-migration
+API-RG-DATA-MIGRATION
+====================
 
-Цель проекта - миграция данных из API RGRU в базу данных SQLite. 
-Это часть проекта по автоматическому формированию врезок к материалам RG.
+Миграция данных из API RGRU в базу данных Postgresql. 
 
-## Результат
-
-
-Можно скачать здесь: <https://1drv.ms/u/s!AmtnhvXAi-RmgoQuuTUD4gdrYrJPyA?e=L4175E> 
-(Пароль: rosg******)
-
-Описание программы
------------
-Исполняемый код выкачивает данные из API RGRU и сохраняет их базу данных SQLite rg.rb.
-База данных содержит три таблицы:
+Программа выкачивает данные из API RGRU и сохраняет их базу данных Postgresql,
+содержащую три таблицы:
 ```
  ribrics       ribrics_objects               articles
  (id)    --<   (rubric_id, object_id)  >---  (obj_id)
 
 ```
-```sql
-> sqlite-utils tables --table --counts  --schema rg.db
-
-table              count  schema
----------------  -------  -----------------------------------------
-rubrics             1153  CREATE TABLE rubrics (
-                                  id TEXT PRIMARY KEY,
-                                  parent_id TEXT,
-                                  title TEXT,
-                                  uri TEXT
-                              )
-rubrics_objects  3053116  CREATE TABLE rubrics_objects (
-                                  rubric_id TEXT,
-                                  object_id TEXT,
-                                  datetime TEXT,
-                                  kind TEXT,
-                                  PRIMARY KEY(rubric_id, object_id)
-                              )
-articles         1202159  CREATE TABLE articles(
-                                        obj_id TEXT PRIMARY KEY,
-                                        announce TEXT,
-                                        authors TEXT,
-                                        date_modified TEXT,
-                                        "full-text" TEXT,
-                                        images TEXT,
-                                        index_priority TEXT,
-                                        is_active TEXT,
-                                        is_announce TEXT,
-                                        is_paid TEXT,
-                                        link_title TEXT,
-                                        links TEXT,
-                                        obj_kind TEXT,
-                                        projects TEXT,
-                                        release_date TEXT,
-                                        spiegel TEXT,
-                                        title TEXT,
-                                        uannounce TEXT,
-                                        url TEXT,
-                                        migration_status TEXT DEFAULT ''
-                                )
-
-```
-
-
 Названия полей таблиц соответствуют названиям полей данных API.
 
 
+Требования к компьютеру разработчика
+---------
+1. golang 
+2. python v>3.5. Выполните `pip install -r python/requirements.txt`.
+3. Должна быть определена переменная окружения RGDSN 
+   c параметрами подключения к Postgres.
 
-Исполнение программы
---------------
-Исполнение должно выполняться в три этапа в строгой последовательности указанными командами. 
-Каждый этап создает и наполняет данными одну таблицу. 
+**Выбор языка**
 
-Если установлен python v>3.7 и Go выполните `pip install -r python/requirements.txt`, а затем:
+Python был выбран из за краткости кода и простоты работы с json. 
+Golang используется из за простоты организации обработки 
+множества одновременных запросов исполняемых в отдельных горутинах. 
 
-1. `python/1_save_rubrics.py` - сохранение рубрик в таблицу rubrics. (~ 1 тыс. записей)
-2. `python/2_save_rubrics_objects.py` - сохранение таблицы связей rubrics_objects. ~3 млн записей.
-3. `./save_articles` - сохранение статей в таблицу articles. ~ 1,5 млн записей 
+Запуск программы
+--------
+1. Компиляция go кода.
+    ```
+    sh/build-executable.sh
+    ```
+2. Запуск 
+    ```
+    python python/main.py
+    ```
+    или в докере
+    ```
+    sh/up.sh
+    ```
 
-Если python не установлен, но есть docker:
+
+
+<!-- 
+Первую версию sqllite можно скачать здесь: <https://1drv.ms/u/s!AmtnhvXAi-RmgoQuuTUD4gdrYrJPyA?e=L4175E> 
+(Пароль: rosg******)
+-->
+
+Описание
+-------
+main.py организует вечный цикл с задержкой,в котором последовательно
+вызываюся функции main() модулей save_rubrics, save_rubrics_objects и save_articles.
+Каждый вызов создает и наполняет данными одну таблицу. 
+
+Таблицы могут быть созданы и вызовами отдельных программ, что иногда удобно для отладки.
+
+1. `python/save_rubrics.py` - сохранить рубрики в таблицу rubrics. (~ 1 тыс. записей)
+2. `python/save_rubrics_objects.py` - сохранить  связи в таблицу rubrics_objects. ~3 млн записей.
+3. `./save_articles` - сохранить статьи в таблицу articles. ~ 1,5 млн записей 
+
+Если python не установлен, но есть docker, запуск можно осуществить следующими командами:
 
 1. `docker run --rm  -v "$PWD:/app" -w "/app" python:3.7-alpine  sh -c "pip install -r python/requirements.txt && python python/1_save_rubrics.py"`
 2. `docker run --rm  -v "$PWD:/app" -w "/app" python:3.7-alpine  sh -c "pip install -r python/requirements.txt && python python/1_save_rubrics_objects.py"`
@@ -90,7 +73,7 @@ articles         1202159  CREATE TABLE articles(
 
 
 
-## Об API
+## API RG
 
 Доступ к API возможен только из внутренней сети rg.
 
@@ -129,48 +112,20 @@ https://outer.rg.ru/plain/proxy/?query=https://rg.ru/api/get/object/article-7987
 
 запрос к rg.ru поместить в query
 
-<!-- 
-<br><br><br>
-
---------------------------
-
-Порядок работы
-==============
-
-1. Изменить код
-2. Запустить докер
-3. Проверить
-4. Запушить
-5. Отдеплоить
-
 
 Команды
 -------
-В директории `sh/` находятся следующие команды для облегчения работы.
+В директории `sh/` находятся следующие команды.
 
 
 |   |   |
 |---|---|
 Подъем                                      | `sh/up.sh`
-Приостановка контейнера                     | `sh/stop.sh`
-Старт приостановленного контейнера          | `sh/start.sh`
 Полный останов контейнера                   | `sh/down.sh`
 Подготовка директории deploy                | `sh/build-deploy-directory.sh`
-Деплой                                      | `sh/deploy.sh`
+Компиляция go                               | `sh/build-executable.sh`
 
+Деплой
+-------
 
-
-drwxrwxr-x  2 gitupdater gitupdater 4.0K Oct  9 03:54 cvs/
--rwxrwxr-x  1 gitupdater gitupdater 2.8G Oct 20 15:29 cvs.zip*
-drwxrwxr-x  6 gitupdater gitupdater 4.0K Oct 20 14:42 data-migrations/
-drwxrwxr-x 10 gitupdater gitupdater 4.0K Oct 22 01:59 rg-corpus/
--rwxrwxr-x  1 gitupdater gitupdater 7.5G Oct 20 03:54 rg-corpus.zip*
-drwxrwxr-x  3 gitupdater gitupdater 4.0K Oct 20 13:02 rg-db/
--rwxrwxr-x  1 gitupdater gitupdater 4.8G Oct 20 03:14 rg-db.zip*
-drwxrwxr-x  9 gitupdater gitupdater 4.0K Oct 20 17:41 text-processor/
-drwxrwxr-x  9 gitupdater gitupdater 4.0K Oct 13 19:12 text-processor0/
--rwxrwxr-x  1 gitupdater gitupdater 678K Oct 20 03:52 text-processor.zip*
-
-ALTER TABLE <table> ALTER COLUMN <column> DROP DEFAULT;
-
- -->
+на dockertest.rgwork.ru:/home/gitupdater/api-rg-data-migration-prod
