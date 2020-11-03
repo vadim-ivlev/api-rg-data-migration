@@ -3,6 +3,11 @@ API-RG-DATA-MIGRATION
 
 Миграция данных из API RGRU в базу данных Postgresql. 
 
+<a href="https://viewer.diagrams.net/?highlight=0000ff&p=anim&edit=_blank&layers=1&nav=1&title=RG%20NLP%20project.drawio#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D1yflDpag5TSUrKPRsHgFzR2sBhjBY_7tz%26export%3Ddownload">Общая схема всех приложений</a>
+<br>
+<br>
+![schema](images/schema.png)
+
 Программа выкачивает данные из API RGRU и сохраняет их базу данных Postgresql,
 содержащую три таблицы:
 ```
