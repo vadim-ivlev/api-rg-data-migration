@@ -56,9 +56,9 @@ def _create_rubrics_objects_table():
     );
     """
 
-    con = db.get_connection()
-    n = db.execute(con, sql )
-    con.close()
+    # con = db.get_connection()
+    n = db.execute(sql )
+    # con.close()
     return n
 
 
@@ -133,9 +133,9 @@ def _replace_rubrics_objects_table():
     ALTER TABLE rubrics_objects_new RENAME TO rubrics_objects;
     -- CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects(kind);
     """
-    con = db.get_connection()
-    n =  db.execute(con, sql )
-    con.close()
+    # con = db.get_connection()
+    n =  db.execute(sql )
+    # con.close()
     return n
 
 

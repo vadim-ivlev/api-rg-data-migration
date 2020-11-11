@@ -33,7 +33,7 @@ def execute_and_return(sql, *args):
         records = [dict(zip(cols,row)) for row in rows]
 
     except Exception as ex:
-        logging.error(ex)
+        print(ex)
     finally:
         if "cur" in locals():
             cur.close()
@@ -43,53 +43,64 @@ def execute_and_return(sql, *args):
 
 
 
-def execute(con, query, *argv):
+def execute(query, *argv):
     "Безопасно исполняет запрос"
+    result = 0
+    con = get_connection()
     try:
         with con:
             cur = con.cursor()
             cur.execute(query, *argv)
             con.commit()
             cur.close()
-        return 1
-    # except sqlite3.IntegrityError:
-    except Exception as exp:
-        logging.error(exp)
-        return 0
-
-
-
-def executemany(con, query, arr=[]):
-    """Безопасно исполняет запрос на множестве записей. arr = [(,,),(,,),...].
-    Возвращает число вставленных записей"""
-
-    if len(arr) == 0:
-        return 0
-
-    try:
-        with con:
-            cur = con.cursor()
-            cur.executemany(query, arr )
-            con.commit()
+            result = 1
+    except Exception as ex:
+        print(ex)
+    finally:
+        if "cur" in locals():
             cur.close()
-        return len(arr)
-    except Exception:
-        return 0
+        if "con" in locals():
+            con.close()
+    return result
 
 
 
-def executemany_or_by_one(con, sql, arr=[]):
-    """Если не удается вставить весь массив в базу данных, делает это по одному элементу.
-    Возвращает число вставленных елементов"""
+# def executemany(con, query, arr=[]):
+#     """Безопасно исполняет запрос на множестве записей. arr = [(,,),(,,),...].
+#     Возвращает число вставленных записей"""
+
+#     result = 0
+#     if len(arr) == 0:
+#         return result
+
+#     try:
+#         with con:
+#             cur = con.cursor()
+#             cur.executemany(query, arr )
+#             con.commit()
+#             result = len(arr)
+#     except Exception as ex:
+#         print(ex)
+#     finally:
+#         if "cur" in locals():
+#             cur.close()
+#         if "con" in locals():
+#             con.close()
+#     return result
+
+
+# def executemany_or_by_one(con, sql, arr=[]):
+#     """Если не удается вставить весь массив в базу данных, делает это по одному элементу.
+#     Возвращает число вставленных елементов"""
     
-    n=0
-    n = executemany(con, sql, arr)
+#     n=0
+#     n = executemany(con, sql, arr)
 
-    if n == 0:
-        for e in arr:
-            n += execute(con, sql, e) 
+#     if n == 0:
+#         for e in arr:
+#             n += execute(con, sql, e) 
     
-    return n
+#     return n
 
 
 

@@ -6,9 +6,8 @@ FROM python:3.9.0-slim-buster
 
 WORKDIR /usr/src/app
 
-COPY . .
-# COPY python/requirements.txt .
-RUN pip install --no-cache-dir -r ./python/requirements.txt
+COPY python/. .
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD [ "python", "-u", "./python/main.py" ]
+CMD [ "python", "-u", "main.py" ]
 # CMD [ "sleep", "10000"]
