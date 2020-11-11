@@ -24,20 +24,3 @@ def get_text_from_url(url):
     return text
 
 
-# def save_text_to_file(text, file_name):
-#     """
-#     cохраняет text в файл 
-#     """
-#     with open(file_name, 'w') as file:
-#         file.write(text)
-#     return text
-
-
-
-# def save_json_to_file(data, file_name):
-#     """
-#     cохраняет JSON данных в файл
-#     """
-#     with open(file_name, 'w') as file:
-#         json.dump(data, file)
-

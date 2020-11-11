@@ -56,9 +56,7 @@ def _create_rubrics_objects_table():
     );
     """
 
-    # con = db.get_connection()
     n = db.execute(sql )
-    # con.close()
     return n
 
 
@@ -74,7 +72,7 @@ def _get_rubric_ids():
 def _save_rubrics_objects_to_db(ids):    
     "Сохраняет таблицу связи рубрикатора с объектами в базу данных"
 
-    print("rubrics_objects. Считывание объектов рубрик ... ")
+    print("rubrics_objects. Считывание объектов рубрик (~ 4 мин )... ")
     
     rubric_counter=0
     object_counter=0
@@ -95,9 +93,9 @@ def _save_rubrics_objects_to_db(ids):
         object_counter += len(objects)
         duration = time.time()-start
         rate = object_counter / duration
-        print('Таблица rubrics_objects ---------------------------------------')
-        print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
-        print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
+        # print('Таблица rubrics_objects ---------------------------------------')
+        # print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
+        # print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     
     print('Таблица rubrics_objects ---------------------------------------')
     print(f' Cохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
@@ -118,10 +116,7 @@ def _get_rubric_objects(rubric_id):
 
 def _save_rubric_object_links(links=[]):
     "Сохраняет массив связок (id рубрики - id объекта) в базу данных"
-    con = db.get_connection()
-    # n = db.executemany_or_by_one(con, "INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES (%s,%s,%s,%s)", links)
-    n = db.execute_values(con, "INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES %s", links, page_size=1000)
-    con.close()
+    n = db.execute_values("INSERT INTO rubrics_objects_new(rubric_id, object_id, datetime, kind) VALUES %s", links, page_size=1000)
     return n
 
 
@@ -133,9 +128,7 @@ def _replace_rubrics_objects_table():
     ALTER TABLE rubrics_objects_new RENAME TO rubrics_objects;
     -- CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects(kind);
     """
-    # con = db.get_connection()
     n =  db.execute(sql )
-    # con.close()
     return n
 
 

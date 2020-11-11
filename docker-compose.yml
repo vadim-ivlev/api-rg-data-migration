@@ -11,8 +11,6 @@ services:
         restart: unless-stopped
         environment: 
             - RGDSN=${RGDSN}
-        # command: python -u main.py
-        # command: sleep 10000
 
 # outer network to communicate with other services ----------------------------------------------------
 networks:

@@ -20,14 +20,14 @@ def main() -> bool:
     if len(rubrics) == 0:
         print("Список рубрик в API {api.url_json} пуст")
         return False        
-    print(f'Создан список из  {len(rubrics)} рубрик')
+    # print(f'Создан список из  {len(rubrics)} рубрик')
     
 
     n = _create_rubrics_table()
     if n==0:
         print("Не удалось создать таблицу rubrics_new")
         return False        
-    print("Созданы таблица rubrics_new")
+    # print("Созданы таблица rubrics_new")
 
 
     start = time.time()
@@ -35,7 +35,7 @@ def main() -> bool:
     if n==0:
         print("Не удалось добавить рубрики в таблицу rubrics_new")
         return False            
-    print(f'{len(rubrics)} рубрик добавлены в в таблицу rubrics_new за {time.time()-start:.2f} sec.')
+    # print(f'{len(rubrics)} рубрик добавлены в в таблицу rubrics_new за {time.time()-start:.2f} sec.')
 
 
     n = _replace_rubrics_table()
@@ -62,9 +62,7 @@ def _create_rubrics_table():
         uri TEXT
     );
     """
-    # con = db.get_connection()
     n =  db.execute(sql_create_rubrics )
-    # con.close()
     return n
 
 
@@ -105,12 +103,7 @@ def _make_rubrics_list(text):
 
 def _save_rubrics_to_database(rubrics):
     "Сохраняет рубрики в базу данных"
-
-    con = db.get_connection()
-    # n = db.executemany_or_by_one(con, "INSERT INTO rubrics_new(id,parent_id,title,uri) VALUES (%s,%s,%s,%s)", rubrics)
-    n = db.execute_values(con, "INSERT INTO rubrics_new(id,parent_id,title,uri) VALUES  %s", rubrics, page_size=2000)
-
-    con.close()
+    n = db.execute_values("INSERT INTO rubrics_new(id,parent_id,title,uri) VALUES  %s", rubrics, page_size=2000)
     return n
 
 
@@ -121,9 +114,7 @@ def _replace_rubrics_table():
     DROP TABLE IF EXISTS rubrics;
     ALTER TABLE rubrics_new RENAME TO rubrics;
     """
-    # con = db.get_connection()
     n =  db.execute(sql )
-    # con.close()
     return n
 
 

@@ -3,6 +3,7 @@ import sys
 import time
 import save_rubrics
 import save_rubrics_objects
+import datetime
 
 # время между попытками обновления таблиц
 sleep_time = 60 * 5
@@ -29,7 +30,7 @@ while True:
     # Обновляем таблицу статей с помощью вызова go программы.
     path = sys.path[0]
     os.system(path+'/save_articles')
-
-    print(f'Ждем {sleep_time/60:.0f} минут после обновления # {counter} ...')
+    dt = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print(f'Ждем {sleep_time/60:.0f} минут после обновления # {counter} {dt}...')
     print('----------------------------------\n')
     time.sleep(sleep_time)
