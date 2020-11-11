@@ -95,11 +95,11 @@ def _save_rubrics_objects_to_db(ids):
         object_counter += len(objects)
         duration = time.time()-start
         rate = object_counter / duration
-    #    print('Таблица rubrics_objects ---------------------------------------')
-    #    print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
-    #    print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
+        print('Таблица rubrics_objects ---------------------------------------')
+        print(f'  В рубрике № {rubric_counter} из {len(ids)} с id={id:6} содержится {len(objects):6} объектов.  Успех сохранения ={n}. Времена загрузки/сохранения = {t1-t0:.2f}/{t2-t1:.2f}')
+        print(f'  Всего сохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     
-    # print('Таблица rubrics_objects ---------------------------------------')
+    print('Таблица rubrics_objects ---------------------------------------')
     print(f' Cохранено {object_counter} объектов за {duration/60:.2f} минут. Средняя скорость {rate:.2f} объектов/секунду.')
     return object_counter
 

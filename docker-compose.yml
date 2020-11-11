@@ -9,12 +9,12 @@ services:
             dockerfile: Dockerfile
         container_name: api-rg-data-migration-prod
         restart: unless-stopped
-        volumes:
-            - ./python:/usr/src/app
+        # volumes:
+        #     - ./python:/usr/src/app
 
         environment: 
             - RGDSN=${RGDSN}
-        command: python -u main.py
+        # command: python -u ./python/main.py
         # command: sleep 10000
 
 # outer network to communicate with other services ----------------------------------------------------
