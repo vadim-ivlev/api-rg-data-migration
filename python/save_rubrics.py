@@ -110,11 +110,15 @@ def _save_rubrics_to_database(rubrics):
 def _replace_rubrics_table():
     "Замещает таблицу rubrics таблицей rubrics_new"
 
-    sql = """
-    DROP TABLE IF EXISTS rubrics;
-    ALTER TABLE rubrics_new RENAME TO rubrics;
-    """
-    n =  db.execute(sql )
+    n =  db.execute("DROP TABLE IF EXISTS rubrics;" )
+    # если не удалось удалить таблицу, заканчиваем. 
+    # Не пытаемся переименовать новую, чтобы не блокировать базу данных.
+    # Возможно блокировку можно поправить настройками базы данных.
+    # SET statement_timeout = '2s'
+    if n==0:
+        return n
+
+    n =  db.execute("ALTER TABLE rubrics_new RENAME TO rubrics;" )
     return n
 
 

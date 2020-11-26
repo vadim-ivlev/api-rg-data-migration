@@ -16,7 +16,7 @@ def get_connection():
         con = psycopg2.connect( DSN )
         return con
     except Exception as ex:
-        logging.error(ex)
+        print(ex)
         return None
     
 
@@ -80,7 +80,7 @@ def execute_values(sql, data=[], template=None, page_size=100, fetch=False):
         con.commit()
         result = 1
     except Exception as ex:
-        logging.error(ex)
+        print(ex)
     finally:
         cur.close()
     return result

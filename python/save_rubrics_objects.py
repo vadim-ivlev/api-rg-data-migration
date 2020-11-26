@@ -123,13 +123,18 @@ def _save_rubric_object_links(links=[]):
 def _replace_rubrics_objects_table():
     "Замещает таблицу rubrics_objects таблицей rubrics_objects_new"
 
-    sql = """
-    DROP TABLE IF EXISTS rubrics_objects;
-    ALTER TABLE rubrics_objects_new RENAME TO rubrics_objects;
-    -- CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects(kind);
-    """
-    n =  db.execute(sql )
+    n =  db.execute("DROP TABLE IF EXISTS rubrics_objects;" )
+    # если не удалось удалить таблицу, заканчиваем. 
+    # Не пытаемся переименовать новую, чтобы не блокировать базу данных.
+    # Возможно блокировку можно поправить настройками базы данных.
+    # SET statement_timeout = '2s'
+    if n==0:
+        return n
+
+    n =  db.execute("ALTER TABLE rubrics_objects_new RENAME TO rubrics_objects;" )
+    # Возможно нужно добавить: CREATE INDEX rubrics_objects_kind_idx ON rubrics_objects(kind)
     return n
+
 
 
 if __name__ == "__main__":
