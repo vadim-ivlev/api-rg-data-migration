@@ -107,6 +107,9 @@ def _get_rubric_objects(rubric_id):
     Получить объекты связанные с рубрикой
     """
     text = api.get_text_from_url(api.url_rubric_objects + rubric_id + '.json')
+    if text == "":
+        return []
+    
     try:
         objects = json.loads(text)
     except:

@@ -11,14 +11,14 @@ def main() -> bool:
     start = time.time()
     rubrics_json = api.get_text_from_url(api.url_json)
     if rubrics_json == '' or rubrics_json is None:
-        print("Не удалось прочитать API: {api.url_json} ")
+        print(f"Не удалось прочитать API: {api.url_json} ")
         return False    
     # print(f'Рубрики загружены из API за {time.time()-start:.2f} sec')
 
 
     rubrics = _make_rubrics_list(rubrics_json)
     if len(rubrics) == 0:
-        print("Список рубрик в API {api.url_json} пуст")
+        print(f"Список рубрик в API {api.url_json} пуст")
         return False        
     # print(f'Создан список из  {len(rubrics)} рубрик')
     

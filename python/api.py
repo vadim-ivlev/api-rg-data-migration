@@ -3,7 +3,10 @@
 
 import requests
 import json
-# import db
+import os
+
+request_timeout = float(os.getenv('REQUEST_TIMEOUT', "5.0"))
+print(f"REQUEST_TIMEOUT = {request_timeout}")
 
 url_proxy = 'https://outer.rg.ru/plain/proxy/?query='
 
@@ -18,9 +21,15 @@ def get_text_from_url(url):
     """
     Возвращает текст из url.
     """    
-    r = requests.get(url)
-    text = r.text
-    r.close()
+    text = ""
+    try:
+        r = requests.get(url, timeout = request_timeout)
+        text = r.text
+        r.close()  
+    except Exception as ex:
+        print("REQUEST ERROR -------------------------")
+        print(ex)
+
     return text
 
 

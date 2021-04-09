@@ -11,6 +11,7 @@ services:
         restart: unless-stopped
         environment: 
             - RGDSN=${RGDSN}
+            - REQUEST_TIMEOUT=6.0
 
 # outer network to communicate with other services ----------------------------------------------------
 networks:

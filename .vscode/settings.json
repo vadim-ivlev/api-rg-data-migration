@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/usr/local/anaconda3/envs/api-rg/bin/python"
+    "python.pythonPath": "/usr/local/anaconda3/envs/api-rg/bin/python",
+    "workbench.colorTheme": "Cobalt2"
 }
