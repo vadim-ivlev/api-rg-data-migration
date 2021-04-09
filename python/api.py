@@ -27,8 +27,8 @@ def get_text_from_url(url):
         text = r.text
         r.close()  
     except Exception as ex:
-        print("REQUEST ERROR -------------------------")
-        print(ex)
+        print(f"REQUEST ERROR ----> {url}")
+        # print(ex)
 
     return text
 
